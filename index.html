@@ -1106,14 +1106,14 @@
     }
 
     .modal-title {
-      font-size: 1.05rem;
-      font-weight: 600;
+      font-size: 1.25rem;
+      font-weight: 800;
       color: var(--txt-1);
     }
 
     .modal-close {
-      width: 30px;
-      height: 30px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       border: 1px solid var(--border);
       background: var(--bg);
@@ -1132,45 +1132,58 @@
 
     /* Forms */
     .fg {
-      margin-bottom: 15px;
+      margin-bottom: 16px;
     }
 
     .fl {
       display: block;
-      font-size: .72rem;
-      font-weight: 600;
-      color: var(--txt-2);
-      letter-spacing: .05em;
+      font-size: .84rem;
+      font-weight: 700;
+      color: var(--txt-1);
+      letter-spacing: .04em;
       text-transform: uppercase;
-      margin-bottom: 6px;
+      margin-bottom: 7px;
     }
 
     .fi,
     .fs,
-    .ft {
+    .ft,
+    select.fi {
       width: 100%;
-      padding: 10px 13px;
-      border: 1px solid var(--border-2);
-      border-radius: var(--r-sm);
+      box-sizing: border-box;
+      padding: 13px 15px;
+      border: 1.5px solid var(--border-2);
+      border-radius: var(--r-md);
       font-family: 'Inter', sans-serif;
-      font-size: .87rem;
+      font-size: 1.05rem;
       color: var(--txt-1);
       background: var(--bg);
       outline: none;
-      transition: border-color .18s, box-shadow .18s;
+      transition: border-color .18s, box-shadow .18s, background .18s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    select.fi {
+      background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235c5057' stroke-width='2.5' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
     }
 
     .fi:focus,
     .fs:focus,
-    .ft:focus {
-      border-color: var(--rose-2);
-      box-shadow: 0 0 0 3px rgba(201, 123, 144, .1);
+    .ft:focus,
+    select.fi:focus {
+      border-color: var(--rose);
+      box-shadow: 0 0 0 3px rgba(201, 123, 144, .18);
       background: var(--surface);
     }
 
     .ft {
       resize: vertical;
-      min-height: 72px;
+      min-height: 85px;
+      line-height: 1.5;
     }
 
     .frow {
@@ -1179,27 +1192,34 @@
       gap: 12px;
     }
 
+    @media(max-width:480px) {
+      .frow {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+    }
+
     .fhint {
-      font-size: .72rem;
+      font-size: .82rem;
       color: var(--txt-3);
-      margin-top: 4px;
+      margin-top: 5px;
     }
 
     /* Member checkboxes for expense split */
     .split-member-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
     .split-member-item {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 13px;
+      gap: 12px;
+      padding: 12px 14px;
       background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--r-sm);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-md);
       cursor: pointer;
       transition: background .15s, border-color .15s;
     }
@@ -1211,20 +1231,20 @@
 
     .split-member-cb {
       accent-color: var(--rose);
-      width: 15px;
-      height: 15px;
+      width: 18px;
+      height: 18px;
       cursor: pointer;
     }
 
     .split-member-av {
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--rose-2), var(--rose));
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: .65rem;
+      font-size: .75rem;
       font-weight: 700;
       color: #fff;
       flex-shrink: 0;
@@ -1232,31 +1252,32 @@
 
     .split-member-name {
       flex: 1;
-      font-size: .85rem;
-      font-weight: 500;
+      font-size: .96rem;
+      font-weight: 600;
       color: var(--txt-1);
     }
 
     .split-member-amt {
       font-family: 'Playfair Display', serif;
-      font-size: .87rem;
-      color: var(--rose);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--rose-dk);
     }
 
     .split-type-tabs {
       display: flex;
       gap: 6px;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
 
     .split-tab {
       flex: 1;
-      padding: 7px;
-      border-radius: var(--r-sm);
-      border: 1px solid var(--border-2);
+      padding: 10px 8px;
+      border-radius: var(--r-md);
+      border: 1.5px solid var(--border-2);
       background: var(--bg);
-      font-size: .76rem;
-      font-weight: 500;
+      font-size: .84rem;
+      font-weight: 600;
       color: var(--txt-2);
       cursor: pointer;
       text-align: center;
@@ -1266,36 +1287,39 @@
     .split-tab.active {
       background: var(--rose-lt);
       border-color: var(--rose-2);
-      color: var(--rose);
+      color: var(--rose-dk);
     }
 
     /* Custom split inputs */
     .custom-splits {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      margin-top: 8px;
+      gap: 10px;
+      margin-top: 10px;
     }
 
     .custom-split-row {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .custom-split-name {
-      font-size: .82rem;
-      color: var(--txt-2);
+      font-size: .95rem;
+      font-weight: 600;
+      color: var(--txt-1);
       flex: 1;
     }
 
     .custom-split-input {
-      width: 90px;
-      padding: 7px 10px;
-      border: 1px solid var(--border-2);
+      width: 110px;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border-2);
       border-radius: var(--r-sm);
       font-family: 'Playfair Display', serif;
-      font-size: .87rem;
+      font-size: 1.05rem;
+      font-weight: 700;
       color: var(--txt-1);
       background: var(--bg);
       outline: none;
@@ -1303,7 +1327,8 @@
     }
 
     .custom-split-input:focus {
-      border-color: var(--rose-2);
+      border-color: var(--rose);
+      background: var(--surface);
     }
 
     /* ─── PIN ─────────────────────────────────────────────────── */
@@ -2795,14 +2820,20 @@
               </svg>
             </button>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;background:var(--surface-2);padding:6px 10px;border-radius:var(--r-sm);border:1px solid var(--border);">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--txt-2)" stroke-width="2.2">
+          <div style="display:flex;align-items:center;gap:6px;background:var(--surface-2);padding:6px 10px;border-radius:var(--r-sm);border:1px solid var(--border);width:100%;box-sizing:border-box;min-width:0;margin-top:2px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--txt-2)" stroke-width="2.2" style="flex-shrink:0;">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
             </svg>
-            <span class="share-url" id="share-url" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.74rem;">—</span>
-            <button class="btn btn-outline btn-xs" onclick="copyShare()">Copy</button>
-            <button class="btn btn-primary btn-xs" onclick="openShareLink()">Preview ↗</button>
+            <span class="share-url" id="share-url" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.76rem;color:var(--txt-2);">—</span>
+            <button class="btn btn-outline btn-xs" onclick="copyShare()" style="flex-shrink:0;padding:5px 10px;font-weight:600;">Copy</button>
+            <button class="btn btn-primary btn-xs" onclick="openShareLink()" title="Open Guest View" style="flex-shrink:0;padding:5px 8px;display:inline-flex;align-items:center;justify-content:center;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -3063,30 +3094,30 @@
       <div class="fg"><label class="fl">Notes (optional)</label><input class="fi" id="ae-notes"
           placeholder="Any details..." /></div>
       <div class="divider"></div>
-      <div style="font-size:.78rem;font-weight:600;color:var(--txt-2);margin-bottom:8px;">Who shares this expense?</div>
-      <div class="fhint" style="margin-bottom:10px;">Choose members included in this expense and how to split it.</div>
+      <div style="font-size:.95rem;font-weight:700;color:var(--txt-1);margin-bottom:6px;">Who shares this expense?</div>
+      <div class="fhint" style="margin-bottom:12px;font-size:.84rem;">Choose members included in this expense and how to split it.</div>
       <div class="split-type-tabs">
         <div class="split-tab active" id="st-equal" onclick="setSplitType('equal')">Split equally</div>
         <div class="split-tab" id="st-custom" onclick="setSplitType('custom')">Custom amounts</div>
         <div class="split-tab" id="st-specific" onclick="setSplitType('specific')">Specific people only</div>
       </div>
-      <div id="ae-include-wrap" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--rose-lt);border:1px solid var(--rose-2);border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="toggleDanahCheckbox(event)">
-        <input type="checkbox" id="ae-include-me" checked style="accent-color:var(--rose-dk);cursor:pointer;width:17px;height:17px;flex-shrink:0;" onchange="recalcSplits()"/>
+      <div id="ae-include-wrap" style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--rose-lt);border:1.5px solid var(--rose-2);border-radius:var(--r-md);margin-bottom:12px;cursor:pointer;" onclick="toggleDanahCheckbox(event)">
+        <input type="checkbox" id="ae-include-me" checked style="accent-color:var(--rose-dk);cursor:pointer;width:19px;height:19px;flex-shrink:0;" onchange="recalcSplits()"/>
         <div style="flex:1;">
-          <label for="ae-include-me" style="font-size:.78rem;font-weight:600;color:var(--txt-1);cursor:pointer;display:block;">Include Danah (me) in split</label>
-          <div style="font-size:.7rem;color:var(--txt-2);">Total is divided by members + Danah so members only owe their share</div>
+          <label for="ae-include-me" style="font-size:.94rem;font-weight:700;color:var(--txt-1);cursor:pointer;display:block;">Include Danah (me) in split</label>
+          <div style="font-size:.8rem;color:var(--txt-2);margin-top:2px;">Total is divided by members + Danah so members only owe their share</div>
         </div>
       </div>
       <div class="split-member-list" id="ae-member-list"></div>
-      <div id="ae-custom-splits" style="display:none;margin-top:8px;">
+      <div id="ae-custom-splits" style="display:none;margin-top:10px;">
         <div class="custom-splits" id="custom-splits-inner"></div>
       </div>
       <div
-        style="margin-top:12px;padding:10px 12px;background:var(--rose-lt);border:1px solid var(--rose-2);border-radius:var(--r-sm);">
-        <div style="font-size:.72rem;color:var(--txt-2);">Each person owes</div>
-        <div id="ae-preview" style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--rose);">—</div>
+        style="margin-top:14px;padding:12px 14px;background:var(--rose-lt);border:1.5px solid var(--rose-2);border-radius:var(--r-md);">
+        <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt-2);">Each person owes</div>
+        <div id="ae-preview" style="font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:800;color:var(--rose-dk);margin-top:3px;">—</div>
       </div>
-      <button class="btn btn-primary" style="width:100%;margin-top:14px;" onclick="addExpense()">Add Expense</button>
+      <button class="btn btn-primary" style="width:100%;margin-top:16px;padding:14px;font-size:1.02rem;font-weight:700;" onclick="addExpense()">Add Expense</button>
     </div>
   </div>
 
@@ -3101,7 +3132,7 @@
           </svg>
         </button>
       </div>
-      <p style="font-size:.8rem;color:var(--txt-2);margin-bottom:14px;line-height:1.4;">
+      <p style="font-size:.9rem;color:var(--txt-2);margin-bottom:16px;line-height:1.5;">
         If a member paid for your commute, food, or another expense, enter it here. This automatically <strong>deducts</strong> from what they owe you!
       </p>
       <div class="fg">
@@ -3120,7 +3151,7 @@
         <label class="fl">Notes (optional)</label>
         <input class="fi" id="ad-notes" placeholder="e.g. Theresa paid for Danah's commute" />
       </div>
-      <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="saveDeduction()">Deduct from Member's Balance</button>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;padding:14px;font-size:1.02rem;font-weight:700;" onclick="saveDeduction()">Deduct from Member's Balance</button>
     </div>
   </div>
 
