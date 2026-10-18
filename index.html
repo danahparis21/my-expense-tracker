@@ -1,0 +1,4487 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Danah's Finance Tracker</title>
+  <meta name="description" content="Danah's personal finance tracker — track who owes you and how much." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap"
+    rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* ─── TOKENS ─────────────────────────────────────────────── */
+    :root {
+      --bg: #f7f5f5;
+      --surface: #ffffff;
+      --border: #ede8ea;
+      --border-2: #e0d9dc;
+      --txt-1: #1c1417;
+      --txt-2: #5c5057;
+      --txt-3: #9e959a;
+
+      --rose: #c97b90;
+      /* primary accent — muted dusty rose */
+      --rose-lt: #f5edf0;
+      /* tinted background */
+      --rose-2: #e8b4c0;
+      /* lighter rose for borders */
+      --rose-dk: #a85e72;
+      /* hover / dark rose */
+
+      --green: #4caf7d;
+      --green-lt: #edf7f1;
+      --amber: #c49a3c;
+      --amber-lt: #fdf8ec;
+      --blue: #4a7dbd;
+      --blue-lt: #edf2fb;
+
+      --r-sm: 10px;
+      --r-md: 16px;
+      --r-lg: 22px;
+      --r-xl: 32px;
+
+      --sh-sm: 0 1px 4px rgba(0, 0, 0, .06);
+      --sh-md: 0 4px 20px rgba(0, 0, 0, .08);
+      --sh-lg: 0 12px 40px rgba(0, 0, 0, .12);
+
+      --ease: cubic-bezier(.4, 0, .2, 1);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 15px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--txt-1);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── VIEWS ───────────────────────────────────────────────── */
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    /* ─── HEADER ──────────────────────────────────────────────── */
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 56px;
+      background: rgba(247, 245, 245, .92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+    }
+
+    .header-logo {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.15rem;
+      color: var(--txt-1);
+      letter-spacing: -.01em;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* ─── BUTTONS ─────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Inter', sans-serif;
+      font-size: .82rem;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: var(--r-xl);
+      border: none;
+      cursor: pointer;
+      transition: background .18s var(--ease), transform .15s var(--ease), box-shadow .18s var(--ease);
+      letter-spacing: .01em;
+      white-space: nowrap;
+    }
+
+    .btn:active {
+      transform: scale(.97);
+    }
+
+    .btn-primary {
+      background: var(--rose);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(201, 123, 144, .25);
+    }
+
+    .btn-primary:hover {
+      background: var(--rose-dk);
+      box-shadow: 0 4px 14px rgba(201, 123, 144, .35);
+    }
+
+    .btn-outline {
+      background: var(--surface);
+      color: var(--txt-2);
+      border: 1px solid var(--border-2);
+      box-shadow: var(--sh-sm);
+    }
+
+    .btn-outline:hover {
+      background: var(--rose-lt);
+      color: var(--rose);
+      border-color: var(--rose-2);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--txt-3);
+      padding: 7px 12px;
+    }
+
+    .btn-ghost:hover {
+      background: var(--rose-lt);
+      color: var(--rose);
+    }
+
+    .btn-danger {
+      background: #fdf0f0;
+      color: #c0392b;
+      border: 1px solid #f5c6c6;
+    }
+
+    .btn-danger:hover {
+      background: #fce4e4;
+    }
+
+    .btn-sm {
+      font-size: .76rem;
+      padding: 6px 12px;
+    }
+
+    .btn-xs {
+      font-size: .72rem;
+      padding: 4px 10px;
+    }
+
+    .btn-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: background .15s;
+      color: var(--txt-3);
+    }
+
+    .btn-icon:hover {
+      background: var(--rose-lt);
+      color: var(--rose);
+      border-color: var(--rose-2);
+    }
+
+    .btn-icon.del:hover {
+      background: #fdf0f0;
+      color: #c0392b;
+      border-color: #f5c6c6;
+    }
+
+    /* ─── ICON helper ─────────────────────────────────────────── */
+    .ico {
+      display: inline-block;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+
+    /* ─── LAYOUT ──────────────────────────────────────────────── */
+    .main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 32px 20px 80px;
+    }
+
+    .main-wide {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 80px;
+    }
+
+    /* ─── PAGE TITLE ──────────────────────────────────────────── */
+    .page-title {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      color: var(--txt-1);
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+
+    .page-sub {
+      font-size: .85rem;
+      color: var(--txt-3);
+      margin-bottom: 28px;
+    }
+
+    /* ─── STATS ───────────────────────────────────────────────── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 18px 20px;
+      box-shadow: var(--sh-sm);
+    }
+
+    .stat-label {
+      font-size: .7rem;
+      font-weight: 600;
+      color: var(--txt-3);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .stat-val {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.7rem;
+      font-weight: 500;
+      color: var(--txt-1);
+    }
+
+    .stat-val.rose {
+      color: var(--rose);
+    }
+
+    .stat-val.green {
+      color: var(--green);
+    }
+
+    .stat-note {
+      font-size: .73rem;
+      color: var(--txt-3);
+      margin-top: 3px;
+    }
+
+    /* ─── SECTION HEADER ──────────────────────────────────────── */
+    .sec-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .sec-title {
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--txt-3);
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    /* ─── GROUP GRID ──────────────────────────────────────────── */
+    .groups-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .group-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 20px;
+      cursor: pointer;
+      position: relative;
+      transition: transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s;
+      box-shadow: var(--sh-sm);
+    }
+
+    .group-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--sh-md);
+      border-color: var(--rose-2);
+    }
+
+    .group-card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .group-icon-wrap {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--r-sm);
+      background: var(--rose-lt);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--rose);
+      flex-shrink: 0;
+    }
+
+    .group-del-btn {
+      opacity: 0;
+      transition: opacity .15s;
+    }
+
+    .group-card:hover .group-del-btn {
+      opacity: 1;
+    }
+
+    .group-name {
+      font-size: .95rem;
+      font-weight: 600;
+      color: var(--txt-1);
+      margin-bottom: 2px;
+    }
+
+    .group-date {
+      font-size: .73rem;
+      color: var(--txt-3);
+    }
+
+    /* member chips on card */
+    .member-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 12px 0;
+    }
+
+    .member-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      padding: 4px 10px 4px 5px;
+      font-size: .73rem;
+      color: var(--txt-2);
+    }
+
+    .chip-avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--rose-2), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .6rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .chip-avatar.paid {
+      background: linear-gradient(135deg, #9ae6b4, var(--green));
+    }
+
+    .group-total {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: var(--txt-1);
+      margin-bottom: 4px;
+    }
+
+    .group-total-note {
+      font-size: .73rem;
+      color: var(--txt-3);
+    }
+
+    .group-cta {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: .76rem;
+      color: var(--rose);
+      font-weight: 500;
+      margin-top: 14px;
+    }
+
+    .add-card {
+      background: var(--surface);
+      border: 1.5px dashed var(--border-2);
+      border-radius: var(--r-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-align: center;
+      min-height: 170px;
+      cursor: pointer;
+      transition: background .18s, border-color .18s, transform .2s;
+      padding: 20px;
+    }
+
+    .add-card:hover {
+      background: var(--rose-lt);
+      border-color: var(--rose-2);
+      transform: translateY(-2px);
+    }
+
+    .add-card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--r-sm);
+      background: var(--rose-lt);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--rose);
+    }
+
+    .add-card-label {
+      font-size: .9rem;
+      font-weight: 500;
+      color: var(--txt-2);
+    }
+
+    .add-card-sub {
+      font-size: .75rem;
+      color: var(--txt-3);
+    }
+
+    /* ─── GROUP DETAIL ────────────────────────────────────────── */
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .8rem;
+      font-weight: 500;
+      color: var(--txt-3);
+      border: none;
+      background: none;
+      cursor: pointer;
+      padding: 0;
+      margin-bottom: 20px;
+      transition: color .15s;
+    }
+
+    .back-btn:hover {
+      color: var(--rose);
+    }
+
+    .detail-header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 24px 26px;
+      margin-bottom: 20px;
+      box-shadow: var(--sh-sm);
+    }
+
+    .detail-header {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-xl);
+      padding: 24px 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, .05);
+      transition: box-shadow .2s var(--ease), border-color .2s var(--ease);
+    }
+
+    .detail-title-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .detail-title {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: var(--txt-1);
+      letter-spacing: -.01em;
+    }
+
+    .detail-meta {
+      font-size: .78rem;
+      font-weight: 500;
+      color: var(--txt-3);
+      margin-top: 3px;
+    }
+
+    .detail-total-block {
+      text-align: right;
+    }
+
+    .detail-total-label {
+      font-size: .7rem;
+      font-weight: 700;
+      color: var(--txt-3);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+
+    .detail-total-val {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.3rem;
+      font-weight: 700;
+      color: var(--txt-1);
+    }
+
+    .detail-total-sub {
+      font-size: .76rem;
+      font-weight: 600;
+      color: var(--txt-3);
+    }
+
+    /* Member row in detail */
+    .member-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      margin-bottom: 2px;
+    }
+
+    .member-card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 16px 18px;
+      min-width: 150px;
+      flex: 1;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .04);
+      transition: transform .18s var(--ease), border-color .18s var(--ease), box-shadow .18s var(--ease);
+    }
+
+    .member-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--rose-2);
+      box-shadow: 0 8px 24px rgba(201, 123, 144, .14);
+    }
+
+    .member-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--rose-lt);
+      border: 1.5px solid var(--rose-2);
+      color: var(--rose-dk);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .9rem;
+      font-weight: 800;
+    }
+
+    .member-avatar.paid-av {
+      background: var(--green-lt);
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .member-card-name {
+      font-size: .96rem;
+      font-weight: 800;
+      color: var(--txt-1);
+    }
+
+    .member-card-amt {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.35rem;
+      color: var(--txt-1);
+      font-weight: 800;
+    }
+
+    .member-card-status {
+      font-size: .7rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      letter-spacing: .02em;
+    }
+
+    .s-pending {
+      background: var(--amber-lt);
+      color: var(--amber);
+      border: 1px solid #ebd9a8;
+    }
+
+    .s-review {
+      background: var(--blue-lt);
+      color: var(--blue);
+      border: 1px solid #b3c9e8;
+    }
+
+    .s-paid {
+      background: var(--green-lt);
+      color: var(--green);
+      border: 1px solid #a3e6be;
+    }
+
+    /* Share row */
+    .share-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      background: #faf7f8;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 12px 16px;
+      margin-top: 16px;
+    }
+
+    .share-label {
+      font-size: .74rem;
+      font-weight: 700;
+      color: var(--txt-2);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .share-url {
+      flex: 1;
+      font-size: .78rem;
+      color: var(--rose-dk);
+      font-family: monospace;
+      word-break: break-all;
+      background: #ffffff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    /* Panels */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media(max-width:760px) {
+      .two-col,
+      .stats-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-xl);
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, .04);
+      transition: box-shadow .2s var(--ease), border-color .2s var(--ease);
+    }
+
+    .panel:hover {
+      box-shadow: 0 8px 28px rgba(0, 0, 0, .07);
+      border-color: var(--border-2);
+    }
+
+    .panel-title {
+      font-size: .88rem;
+      font-weight: 800;
+      color: var(--txt-1);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    /* Expense items */
+    .exp-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .exp-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-md);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, .03);
+      transition: transform .18s var(--ease), border-color .18s var(--ease), box-shadow .18s var(--ease);
+    }
+
+    .exp-item:hover {
+      transform: translateY(-2px);
+      border-color: var(--rose-2);
+      box-shadow: 0 6px 18px rgba(201, 123, 144, .12);
+    }
+
+    .exp-info {
+      flex: 1;
+    }
+
+    .exp-name {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--txt-1);
+      letter-spacing: -.01em;
+    }
+
+    .exp-note {
+      font-size: .76rem;
+      color: var(--txt-3);
+      margin-top: 3px;
+    }
+
+    .exp-splits {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 7px;
+    }
+
+    .exp-split-badge {
+      font-size: .68rem;
+      font-weight: 600;
+      background: var(--rose-lt);
+      color: var(--rose-dk);
+      border: 1px solid var(--rose-2);
+      border-radius: 20px;
+      padding: 2px 8px;
+    }
+
+    .exp-amount {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      color: var(--txt-1);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 30px 0;
+      color: var(--txt-3);
+      font-size: .85rem;
+      font-style: italic;
+    }
+
+    /* ─── REALISTIC PAPER RECEIPT DESIGN ──────────────────────── */
+    .receipt-container {
+      margin: 16px 0 24px;
+      position: relative;
+    }
+
+    .printer-slot {
+      width: 90%;
+      max-width: 440px;
+      height: 16px;
+      background: #181517;
+      border-radius: 12px;
+      margin: 0 auto -6px;
+      position: relative;
+      z-index: 3;
+      box-shadow: inset 0 4px 8px rgba(0, 0, 0, .85), 0 2px 4px rgba(0, 0, 0, .15);
+      border: 1.5px solid #2e262a;
+    }
+
+    .paper-receipt {
+      background: #ffffff;
+      border-radius: 14px 14px 0 0;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, .1), 0 2px 6px rgba(0, 0, 0, .04);
+      position: relative;
+      z-index: 2;
+      border: 1px solid #ebe4e7;
+      border-bottom: none;
+      padding: 26px 26px 18px;
+      color: #1c1417;
+      font-family: 'Inter', sans-serif;
+      max-width: 460px;
+      margin: 0 auto;
+    }
+
+    .receipt-tag {
+      text-align: center;
+      font-family: monospace;
+      font-size: .74rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--txt-3);
+    }
+
+    .receipt-title {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-align: center;
+      margin: 4px 0 2px;
+      color: var(--txt-1);
+    }
+
+    .receipt-meta {
+      font-size: .73rem;
+      text-align: center;
+      color: var(--txt-3);
+    }
+
+    .receipt-divider {
+      text-align: center;
+      font-family: monospace;
+      color: #d8ced3;
+      font-size: .8rem;
+      letter-spacing: .18em;
+      margin: 10px 0;
+      user-select: none;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .receipt-figures {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 8px 4px;
+      border-bottom: 1px dashed #e8dee3;
+    }
+
+    .receipt-fig-label {
+      font-size: .86rem;
+      font-weight: 700;
+      color: var(--txt-2);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .receipt-fig-val {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--txt-1);
+    }
+
+    .receipt-members-box {
+      margin: 14px 0 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .rm-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #faf6f8;
+      border: 1px solid #f2e9ed;
+    }
+
+    .rm-left {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .rm-av {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--rose-lt);
+      border: 1px solid var(--rose-2);
+      color: var(--rose-dk);
+      font-size: .72rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .rm-av.paid {
+      background: var(--green-lt);
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .rm-name {
+      font-size: .86rem;
+      font-weight: 700;
+      color: var(--txt-1);
+    }
+
+    .rm-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .rm-pill {
+      font-size: .66rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 14px;
+    }
+
+    .rm-pill.paid {
+      background: var(--green-lt);
+      color: var(--green);
+      border: 1px solid #a3e6be;
+    }
+
+    .rm-pill.pending {
+      background: var(--amber-lt);
+      color: var(--amber);
+      border: 1px solid #ebd9a8;
+    }
+
+    .rm-pill.review {
+      background: var(--blue-lt);
+      color: var(--blue);
+      border: 1px solid #b3c9e8;
+    }
+
+    .rm-amt {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--txt-1);
+      min-width: 65px;
+      text-align: right;
+    }
+
+    /* Sawtooth jagged perforated bottom edge */
+    .receipt-sawtooth {
+      max-width: 460px;
+      margin: 0 auto;
+      height: 14px;
+      background: linear-gradient(135deg, #ffffff 7px, transparent 0), linear-gradient(-135deg, #ffffff 7px, transparent 0);
+      background-size: 14px 14px;
+      background-repeat: repeat-x;
+      position: relative;
+      z-index: 2;
+      filter: drop-shadow(0 4px 3px rgba(0, 0, 0, .06));
+    }
+
+    /* Stepper dots on receipt */
+    .receipt-stepper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 12px 0 6px;
+    }
+
+    .receipt-step-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #e2d9dd;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 0 1px #d0c4c9;
+    }
+
+    .receipt-step-dot.active {
+      background: var(--green);
+      box-shadow: 0 0 0 1px var(--green);
+    }
+
+    .receipt-step-line {
+      width: 32px;
+      height: 2px;
+      background: #e2d9dd;
+    }
+
+    .receipt-step-line.active {
+      background: var(--green);
+    }
+
+    /* QR Code Upload Component */
+    .qr-upload-box {
+      border: 1.5px dashed var(--border-2);
+      border-radius: var(--r-md);
+      padding: 12px;
+      text-align: center;
+      background: #fffbfe;
+      margin-bottom: 12px;
+      transition: border-color .15s, background .15s;
+    }
+
+    .qr-upload-box:hover {
+      border-color: var(--rose);
+      background: var(--rose-lt);
+    }
+
+    .qr-prev-img {
+      width: 72px;
+      height: 72px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      object-fit: cover;
+      box-shadow: var(--sh-sm);
+    }
+
+    /* ─── MODALS ──────────────────────────────────────────────── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(28, 20, 23, .4);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s;
+    }
+
+    .overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-xl);
+      padding: 28px 26px;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: var(--sh-lg);
+      transform: translateY(20px) scale(.98);
+      transition: transform .3s cubic-bezier(.34, 1.56, .64, 1);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .overlay.open .modal {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--txt-1);
+    }
+
+    .modal-close {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--txt-3);
+      transition: background .15s;
+    }
+
+    .modal-close:hover {
+      background: var(--rose-lt);
+      color: var(--rose);
+    }
+
+    /* Forms */
+    .fg {
+      margin-bottom: 15px;
+    }
+
+    .fl {
+      display: block;
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--txt-2);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .fi,
+    .fs,
+    .ft {
+      width: 100%;
+      padding: 10px 13px;
+      border: 1px solid var(--border-2);
+      border-radius: var(--r-sm);
+      font-family: 'Inter', sans-serif;
+      font-size: .87rem;
+      color: var(--txt-1);
+      background: var(--bg);
+      outline: none;
+      transition: border-color .18s, box-shadow .18s;
+    }
+
+    .fi:focus,
+    .fs:focus,
+    .ft:focus {
+      border-color: var(--rose-2);
+      box-shadow: 0 0 0 3px rgba(201, 123, 144, .1);
+      background: var(--surface);
+    }
+
+    .ft {
+      resize: vertical;
+      min-height: 72px;
+    }
+
+    .frow {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .fhint {
+      font-size: .72rem;
+      color: var(--txt-3);
+      margin-top: 4px;
+    }
+
+    /* Member checkboxes for expense split */
+    .split-member-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .split-member-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 13px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+
+    .split-member-item.checked {
+      background: var(--rose-lt);
+      border-color: var(--rose-2);
+    }
+
+    .split-member-cb {
+      accent-color: var(--rose);
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+    }
+
+    .split-member-av {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--rose-2), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .65rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .split-member-name {
+      flex: 1;
+      font-size: .85rem;
+      font-weight: 500;
+      color: var(--txt-1);
+    }
+
+    .split-member-amt {
+      font-family: 'Playfair Display', serif;
+      font-size: .87rem;
+      color: var(--rose);
+    }
+
+    .split-type-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .split-tab {
+      flex: 1;
+      padding: 7px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--border-2);
+      background: var(--bg);
+      font-size: .76rem;
+      font-weight: 500;
+      color: var(--txt-2);
+      cursor: pointer;
+      text-align: center;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+
+    .split-tab.active {
+      background: var(--rose-lt);
+      border-color: var(--rose-2);
+      color: var(--rose);
+    }
+
+    /* Custom split inputs */
+    .custom-splits {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .custom-split-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .custom-split-name {
+      font-size: .82rem;
+      color: var(--txt-2);
+      flex: 1;
+    }
+
+    .custom-split-input {
+      width: 90px;
+      padding: 7px 10px;
+      border: 1px solid var(--border-2);
+      border-radius: var(--r-sm);
+      font-family: 'Playfair Display', serif;
+      font-size: .87rem;
+      color: var(--txt-1);
+      background: var(--bg);
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    .custom-split-input:focus {
+      border-color: var(--rose-2);
+    }
+
+    /* ─── PIN ─────────────────────────────────────────────────── */
+    .pin-screen {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      text-align: center;
+    }
+
+    .pin-mascot {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      margin-bottom: 20px;
+      object-fit: cover;
+      box-shadow: var(--sh-md);
+    }
+
+    .pin-title {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.8rem;
+      color: var(--txt-1);
+      margin-bottom: 4px;
+    }
+
+    .pin-sub {
+      font-size: .83rem;
+      color: var(--txt-3);
+      margin-bottom: 28px;
+    }
+
+    .pin-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-xl);
+      padding: 28px;
+      max-width: 320px;
+      width: 100%;
+      box-shadow: var(--sh-md);
+    }
+
+    .pin-dots {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .pin-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border-2);
+      background: transparent;
+      transition: background .18s, border-color .18s;
+    }
+
+    .pin-dot.filled {
+      background: var(--rose);
+      border-color: var(--rose);
+    }
+
+    .pin-keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .pin-key {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      height: 50px;
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--txt-1);
+      cursor: pointer;
+      transition: background .15s, transform .12s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pin-key:hover {
+      background: var(--rose-lt);
+      border-color: var(--rose-2);
+    }
+
+    .pin-key:active {
+      transform: scale(.94);
+    }
+
+    .pin-key.del {
+      color: var(--rose);
+    }
+
+    .pin-key.go {
+      background: var(--rose);
+      color: #fff;
+      border-color: var(--rose);
+      box-shadow: 0 2px 8px rgba(201, 123, 144, .3);
+    }
+
+    .pin-key.go:hover {
+      background: var(--rose-dk);
+    }
+
+    .pin-err {
+      color: #c0392b;
+      font-size: .78rem;
+      margin-top: 12px;
+      min-height: 18px;
+    }
+
+    .pin-guest {
+      margin-top: 14px;
+      font-size: .78rem;
+      color: var(--txt-3);
+    }
+
+    .pin-guest a {
+      color: var(--rose);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    /* ─── NAV TABS ────────────────────────────────────────────── */
+    .nav-tabs {
+      display: inline-flex;
+      gap: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      padding: 4px;
+      margin-bottom: 28px;
+    }
+
+    .nav-tab {
+      padding: 7px 18px;
+      border-radius: 40px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: .8rem;
+      font-weight: 500;
+      color: var(--txt-3);
+      transition: background .15s, color .15s;
+    }
+
+    .nav-tab.active {
+      background: var(--rose);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(201, 123, 144, .3);
+    }
+
+    /* ─── PUBLIC VIEW & COQUETTE STYLING ──────────────────────── */
+    #v-pub-home,
+    #v-pub-group {
+      min-height: 100vh;
+      background-color: #faf4f6;
+      background-image: repeating-linear-gradient(
+        90deg,
+        #faf4f6 0px,
+        #faf4f6 32px,
+        #f4e9ed 32px,
+        #f4e9ed 64px
+      );
+      color: var(--txt-1);
+    }
+
+    .pub-header {
+      background: rgba(255, 255, 255, .88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(232, 180, 192, .45);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .pub-title {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.15rem;
+      color: var(--txt-1);
+    }
+
+    .pub-container {
+      max-width: 580px;
+      margin: 0 auto;
+      padding: 24px 18px 80px;
+    }
+
+    /* Coquette Hero */
+    .pub-hero {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .coquette-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: var(--r-xl);
+      background: #ffffff;
+      border: 1px solid var(--rose-2);
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--rose-dk);
+      box-shadow: 0 2px 8px rgba(201, 123, 144, .12);
+      margin-bottom: 10px;
+    }
+
+    .pub-hero-title {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: clamp(1.8rem, 5vw, 2.3rem);
+      color: var(--txt-1);
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+
+    .pub-hero-sub {
+      font-size: .84rem;
+      color: var(--txt-2);
+      line-height: 1.5;
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    /* Companion Card */
+    .pub-companion-card {
+      background: #ffffff;
+      border: 1px solid rgba(232, 180, 192, .5);
+      border-radius: var(--r-lg);
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 16px rgba(180, 120, 140, .06);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .companion-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 2px solid var(--rose-2);
+      flex-shrink: 0;
+      object-fit: cover;
+      box-shadow: 0 2px 8px rgba(201, 123, 144, .2);
+    }
+
+    .companion-bubble {
+      flex: 1;
+      font-size: .82rem;
+      color: var(--txt-2);
+      line-height: 1.45;
+    }
+
+    /* Card Section Container */
+    .pub-card-section {
+      background: #ffffff;
+      border: 1px solid rgba(232, 180, 192, .4);
+      border-radius: var(--r-lg);
+      padding: 20px 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 20px rgba(180, 120, 140, .06);
+    }
+
+    .pub-section-header {
+      margin-bottom: 14px;
+    }
+
+    .pub-section-tag {
+      font-size: .74rem;
+      font-weight: 700;
+      color: var(--rose-dk);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .pub-section-hint {
+      font-size: .78rem;
+      color: var(--txt-3);
+    }
+
+    /* Vertical Member Selection Cards */
+    .pub-member-vlist {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .pub-member-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: var(--r-md);
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      transition: transform .18s var(--ease), border-color .18s var(--ease), box-shadow .18s var(--ease), background .18s var(--ease);
+    }
+
+    .pub-member-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--rose-2);
+      background: #fffbfe;
+      box-shadow: 0 6px 18px rgba(201, 123, 144, .12);
+    }
+
+    .pub-member-card.selected {
+      border-color: var(--rose);
+      background: linear-gradient(135deg, #ffffff 0%, #fdf5f8 100%);
+      box-shadow: 0 6px 20px rgba(201, 123, 144, .2);
+    }
+
+    .pmc-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .pmc-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--rose-lt);
+      border: 1.5px solid var(--rose-2);
+      color: var(--rose-dk);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .95rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      transition: background .18s, color .18s;
+    }
+
+    .pmc-avatar.paid {
+      background: var(--green-lt);
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .pub-member-card.selected .pmc-avatar:not(.paid) {
+      background: var(--rose);
+      border-color: var(--rose);
+      color: #ffffff;
+    }
+
+    .pmc-details {
+      min-width: 0;
+    }
+
+    .pmc-name {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--txt-1);
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pmc-sub {
+      font-size: .74rem;
+      color: var(--txt-3);
+    }
+
+    .pmc-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .pmc-bal {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--txt-1);
+    }
+
+    .pub-member-card.selected .pmc-bal {
+      color: var(--rose-dk);
+    }
+
+    .pmc-tag {
+      font-size: .68rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: var(--r-xl);
+      letter-spacing: .02em;
+    }
+
+    .pmc-tag.pending {
+      background: var(--rose-lt);
+      color: var(--rose-dk);
+      border: 1px solid var(--rose-2);
+    }
+
+    .pmc-tag.review {
+      background: var(--amber-lt);
+      color: var(--amber);
+      border: 1px solid #ebd9a8;
+    }
+
+    .pmc-tag.paid {
+      background: var(--green-lt);
+      color: var(--green);
+      border: 1px solid #c2e6d1;
+    }
+
+    /* ─── FINANCE TRACKER BALANCE CARD ────────────────────────── */
+    .fin-balance-card {
+      background: linear-gradient(145deg, #ffffff 0%, #fdf8fa 55%, #f9edf2 100%);
+      border: 1.5px solid #ebd8e0;
+      border-radius: var(--r-xl);
+      padding: 24px 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 12px 36px rgba(180, 110, 130, .1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .fin-card-glow {
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201, 123, 144, .18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .fin-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .fin-chip-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--r-xl);
+      background: rgba(255, 255, 255, .8);
+      border: 1px solid var(--rose-2);
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--rose-dk);
+    }
+
+    .fin-status-pill {
+      font-size: .72rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: var(--r-xl);
+      letter-spacing: .02em;
+    }
+
+    .fin-status-pill.s-pending {
+      background: var(--rose-lt);
+      color: var(--rose-dk);
+      border: 1px solid var(--rose-2);
+    }
+
+    .fin-status-pill.s-review {
+      background: var(--amber-lt);
+      color: var(--amber);
+      border: 1px solid #ebd9a8;
+    }
+
+    .fin-status-pill.s-paid {
+      background: var(--green-lt);
+      color: var(--green);
+      border: 1px solid #c2e6d1;
+    }
+
+    .fin-card-body {
+      margin-bottom: 16px;
+    }
+
+    .fin-card-owner {
+      font-size: .84rem;
+      font-weight: 500;
+      color: var(--txt-2);
+      margin-bottom: 4px;
+    }
+
+    .fin-card-sum {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.4rem, 7vw, 3rem);
+      font-weight: 600;
+      color: var(--txt-1);
+      line-height: 1.1;
+      letter-spacing: -.02em;
+      margin-bottom: 8px;
+    }
+
+    .fin-card-meta {
+      font-size: .76rem;
+      color: var(--txt-3);
+    }
+
+    .fin-card-action-bar {
+      margin-top: 8px;
+      border-top: 1px solid rgba(232, 180, 192, .4);
+      padding-top: 14px;
+    }
+
+    /* ─── ITEMIZED BREAKDOWN ──────────────────────────────────── */
+    .fin-breakdown-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .fin-exp-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: var(--r-md);
+      background: #faf7f8;
+      border: 1px solid #f0e6eb;
+    }
+
+    .fer-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--rose-dk);
+      flex-shrink: 0;
+    }
+
+    .fer-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .fer-title {
+      font-size: .88rem;
+      font-weight: 600;
+      color: var(--txt-1);
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .fer-meta {
+      font-size: .72rem;
+      color: var(--txt-3);
+    }
+
+    .fer-amount-col {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .fer-share-lbl {
+      font-size: .66rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--txt-3);
+    }
+
+    .fer-share-val {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--rose-dk);
+    }
+
+    /* ─── REALISTIC BANK & PAYMENT CARDS ─────────────────────── */
+    .bank-cards-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .fin-bank-card {
+      width: 100%;
+      min-height: 200px;
+      border-radius: 20px;
+      padding: 22px 24px;
+      color: #ffffff;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, .18), inset 0 1px 1px rgba(255, 255, 255, .35);
+      transition: transform .2s var(--ease), box-shadow .2s var(--ease);
+    }
+
+    .fin-bank-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, .22), inset 0 1px 1px rgba(255, 255, 255, .4);
+    }
+
+    /* GCash Card Theme */
+    .fin-bank-card.card-gcash {
+      background: linear-gradient(135deg, #023e8a 0%, #0077b6 48%, #0096c7 100%);
+      box-shadow: 0 14px 34px rgba(0, 119, 182, .28), inset 0 1px 1px rgba(255, 255, 255, .35);
+    }
+    .fin-bank-card.card-gcash::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, .15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* MariBank Card Theme - Official Sea/Shopee Vibrant Orange */
+    .fin-bank-card.card-maya,
+    .fin-bank-card.card-maribank {
+      background: linear-gradient(135deg, #e63900 0%, #ff5722 45%, #ff7844 100%);
+      box-shadow: 0 14px 34px rgba(255, 87, 34, .32), inset 0 1px 1px rgba(255, 255, 255, .35);
+    }
+    .fin-bank-card.card-maya::before,
+    .fin-bank-card.card-maribank::before {
+      content: '';
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, .22) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .fbc-qr-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: .84rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, .18);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px dashed rgba(255, 255, 255, .45);
+      padding: 8px 14px;
+      border-radius: 12px;
+      margin: 14px 0 10px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+    }
+
+    /* BPI Card Theme */
+    .fin-bank-card.card-bpi {
+      background: linear-gradient(135deg, #42080f 0%, #6e101c 50%, #941727 100%);
+      box-shadow: 0 14px 34px rgba(110, 16, 28, .28), inset 0 1px 1px rgba(255, 255, 255, .3);
+    }
+    .fin-bank-card.card-bpi::before {
+      content: '';
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 180, 180, .16) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .fbc-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 1;
+    }
+
+    .fbc-chip-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .emv-chip {
+      width: 44px;
+      height: 32px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, .25);
+    }
+
+    .contactless-wave {
+      opacity: .85;
+    }
+
+    .fbc-brand-logo {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, .3);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .fbc-number {
+      font-family: 'Inter', monospace;
+      font-size: clamp(1.2rem, 4vw, 1.45rem);
+      font-weight: 600;
+      letter-spacing: .16em;
+      color: #ffffff;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, .4);
+      margin: 18px 0 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .fbc-bottom {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .fbc-holder {
+      min-width: 0;
+    }
+
+    .fbc-holder-lbl {
+      font-size: .62rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      opacity: .75;
+      margin-bottom: 2px;
+    }
+
+    .fbc-holder-val {
+      font-size: .88rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+    }
+
+    .fbc-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .fbc-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255, 255, 255, .2);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, .35);
+      color: #ffffff;
+      border-radius: var(--r-xl);
+      padding: 6px 14px;
+      font-size: .76rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, transform .15s;
+    }
+
+    .fbc-btn:hover {
+      background: rgba(255, 255, 255, .35);
+      transform: translateY(-1px);
+    }
+
+    .fbc-btn:active {
+      transform: scale(.96);
+    }
+
+    /* Paid Hero Box */
+    .paid-hero-box {
+      text-align: center;
+      padding: 6px 4px;
+    }
+
+    .paid-hero-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--rose-lt);
+      border: 1.5px solid var(--rose-2);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    .paid-hero-title {
+      font-size: .98rem;
+      font-weight: 600;
+      color: var(--txt-1);
+      margin-bottom: 4px;
+    }
+
+    .paid-hero-sub {
+      font-size: .82rem;
+      color: var(--txt-2);
+      line-height: 1.5;
+      margin-bottom: 14px;
+      max-width: 420px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ─── SETTINGS ────────────────────────────────────────────── */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 16px;
+    }
+
+    /* ─── TOAST ───────────────────────────────────────────────── */
+    .toast-wrap {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .83rem;
+      color: var(--txt-1);
+      box-shadow: var(--sh-lg);
+      animation: toastIn .3s cubic-bezier(.34, 1.56, .64, 1);
+      max-width: 300px;
+    }
+
+    .toast.s {
+      border-left: 3px solid var(--green);
+    }
+
+    .toast.e {
+      border-left: 3px solid #e57373;
+    }
+
+    .toast.i {
+      border-left: 3px solid var(--rose);
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(.96)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    /* ─── CONFETTI ────────────────────────────────────────────── */
+    .confetti-p {
+      position: fixed;
+      width: 7px;
+      height: 7px;
+      border-radius: 2px;
+      animation: cfall 2.4s ease-in forwards;
+      z-index: 9000;
+    }
+
+    @keyframes cfall {
+      0% {
+        opacity: 1;
+        transform: translateY(-10px) rotate(0)
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateY(100vh) rotate(540deg)
+      }
+    }
+
+    /* ─── MISC ────────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 16px 0;
+    }
+
+    .mt-14 {
+      margin-top: 14px;
+    }
+
+    .txt-soft {
+      color: var(--txt-3);
+    }
+
+    /* ─── EDITABLE TITLE ─────────────────────────────────────── */
+    .editable-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .editable-title-input {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: var(--txt-1);
+      border: none;
+      background: transparent;
+      outline: none;
+      width: 100%;
+      min-width: 120px;
+      padding: 2px 4px;
+      border-radius: 6px;
+      transition: background .15s, box-shadow .15s;
+    }
+
+    .editable-title-input:focus {
+      background: var(--rose-lt);
+      box-shadow: 0 0 0 2px var(--rose-2);
+    }
+
+    .edit-title-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 8px;
+      cursor: pointer;
+      color: var(--txt-3);
+      display: inline-flex;
+      align-items: center;
+      transition: background .15s, color .15s, border-color .15s;
+      flex-shrink: 0;
+    }
+
+    .edit-title-btn:hover {
+      background: var(--rose-lt);
+      color: var(--rose);
+      border-color: var(--rose-2);
+    }
+
+    /* ─── MOBILE RESPONSIVE ──────────────────────────────────── */
+    @media(max-width:640px) {
+      html { font-size: 14px; }
+
+      .app-header {
+        padding: 0 14px;
+        height: 52px;
+      }
+
+      .header-logo {
+        font-size: 1rem;
+      }
+
+      .main, .main-wide {
+        padding: 16px 12px 80px;
+      }
+
+      .page-title {
+        font-size: 1.6rem;
+      }
+
+      /* Stats: 2×2 grid on mobile */
+      .stats-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .stat-card {
+        padding: 14px 12px;
+      }
+
+      .stat-val {
+        font-size: 1.3rem;
+      }
+
+      /* Groups grid: single column */
+      .groups-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .detail-header {
+        padding: 16px;
+        border-radius: var(--r-lg);
+      }
+
+      .detail-title-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .editable-title-input {
+        font-size: 1.5rem;
+      }
+
+      .detail-total-val {
+        font-size: 1.8rem;
+      }
+
+      .detail-total-block {
+        text-align: left;
+      }
+
+      .member-row {
+        gap: 8px;
+      }
+
+      .member-card {
+        min-width: 0;
+        padding: 12px 14px;
+      }
+
+      .member-card-amt {
+        font-size: 1.1rem;
+      }
+
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+
+      .share-row {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .share-url {
+        font-size: .72rem;
+        word-break: break-all;
+      }
+
+      .share-row > div:last-child {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .share-row > div:last-child .btn {
+        flex: 1;
+      }
+
+      .receipt-container {
+        margin: 12px 0 18px;
+      }
+
+      .paper-receipt {
+        padding: 18px 16px 14px;
+      }
+
+      .receipt-title {
+        font-size: 1.2rem;
+      }
+
+      .receipt-fig-val {
+        font-size: 1.5rem;
+      }
+
+      .rm-row {
+        padding: 8px;
+      }
+
+      .rm-name {
+        font-size: .8rem;
+      }
+
+      .rm-amt {
+        font-size: .9rem;
+        min-width: 55px;
+      }
+
+      .exp-item {
+        padding: 12px 14px;
+      }
+
+      .panel {
+        padding: 16px;
+      }
+
+      .btn {
+        font-size: .8rem;
+        padding: 7px 13px;
+      }
+
+      .btn-sm {
+        font-size: .76rem;
+        padding: 6px 11px;
+      }
+
+      /* Bank cards: full-width on mobile */
+      .bank-cards-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .fin-bank-card {
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .fbc-number {
+        font-size: 1.1rem;
+        letter-spacing: .1em;
+      }
+
+      /* Public views */
+      .pub-hero-title {
+        font-size: 1.7rem;
+      }
+
+      .pub-member-card {
+        padding: 14px 16px;
+      }
+
+      .pmc-name {
+        font-size: 1rem;
+      }
+
+      .pmc-bal {
+        font-size: 1.5rem;
+      }
+
+      .modal {
+        padding: 20px 18px;
+        border-radius: var(--r-lg);
+      }
+    }
+
+    @media(max-width:380px) {
+      .header-logo { display: none; }
+      .stats-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .stat-card { padding: 12px 10px; }
+      .stat-val { font-size: 1.15rem; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="toast-wrap" id="toast-wrap"></div>
+
+  <!-- ═══════════════════════════ PIN ═══════════════════════════ -->
+  <div id="v-pin" class="view active">
+    <div class="pin-screen">
+      <img src="mascot.jpg" alt="Danah" class="pin-mascot" onerror="this.style.display='none'" />
+      <h1 class="pin-title">Danah's Finance Tracker</h1>
+      <p class="pin-sub">Enter your PIN to continue</p>
+      <div class="pin-card" id="pin-card">
+        <div class="pin-dots">
+          <div class="pin-dot" id="d0"></div>
+          <div class="pin-dot" id="d1"></div>
+          <div class="pin-dot" id="d2"></div>
+          <div class="pin-dot" id="d3"></div>
+        </div>
+        <div class="pin-keypad">
+          <button class="pin-key" onclick="pp('1')">1</button>
+          <button class="pin-key" onclick="pp('2')">2</button>
+          <button class="pin-key" onclick="pp('3')">3</button>
+          <button class="pin-key" onclick="pp('4')">4</button>
+          <button class="pin-key" onclick="pp('5')">5</button>
+          <button class="pin-key" onclick="pp('6')">6</button>
+          <button class="pin-key" onclick="pp('7')">7</button>
+          <button class="pin-key" onclick="pp('8')">8</button>
+          <button class="pin-key" onclick="pp('9')">9</button>
+          <button class="pin-key del" onclick="pd()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />
+              <line x1="18" y1="9" x2="12" y2="15" />
+              <line x1="12" y1="9" x2="18" y2="15" />
+            </svg>
+          </button>
+          <button class="pin-key" onclick="pp('0')">0</button>
+          <button class="pin-key go" onclick="pe()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="pin-err" id="pin-err"></div>
+        <div class="pin-guest">Not admin? <a href="#" onclick="goPubHome();return false">View as guest</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ ADMIN HOME ═══════════════════ -->
+  <div id="v-admin" class="view">
+    <header class="app-header">
+      <div class="header-logo">Danah's Finance Tracker</div>
+      <div class="header-actions">
+        <button class="btn btn-outline btn-sm" onclick="showTab('settings')">
+          <svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+          Settings
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="lockAdmin()">
+          <svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          Lock
+        </button>
+      </div>
+    </header>
+
+    <div class="main-wide">
+      <div class="nav-tabs">
+        <button class="nav-tab active" id="tab-groups" onclick="showTab('groups')">Groups</button>
+        <button class="nav-tab" id="tab-settings" onclick="showTab('settings')">Payment Info</button>
+      </div>
+
+      <!-- GROUPS TAB -->
+      <div id="tc-groups">
+        <h1 class="page-title">Your Expense Groups</h1>
+        <p class="page-sub" id="admin-sub">Track who owes you across all your projects.</p>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Total Spent</div>
+            <div class="stat-val rose" id="s-spent">₱0</div>
+            <div class="stat-note">all groups combined</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Outstanding</div>
+            <div class="stat-val rose" id="s-owed">₱0</div>
+            <div class="stat-note">pending collection</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Collected</div>
+            <div class="stat-val green" id="s-paid">₱0</div>
+            <div class="stat-note">already received</div>
+          </div>
+        </div>
+
+        <div class="sec-head">
+          <span class="sec-title">Groups</span>
+        </div>
+        <div class="groups-grid" id="groups-grid"></div>
+      </div>
+
+      <!-- SETTINGS TAB -->
+      <div id="tc-settings" style="display:none">
+        <h1 class="page-title">Payment Info</h1>
+        <p class="page-sub">Shown to your friends so they know how to pay you back.</p>
+
+        <div class="settings-grid">
+          <!-- GCash -->
+          <div class="panel">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+              <div
+                style="width:38px;height:38px;background:linear-gradient(135deg,#007aff,#005dd0);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.82rem;font-weight:800;box-shadow:0 2px 8px rgba(0,122,255,.25);">
+                G</div>
+              <div>
+                <div style="font-size:.95rem;font-weight:700;color:var(--txt-1);">GCash</div>
+                <div style="font-size:.72rem;color:var(--txt-3);">11 digits (optional) • Scan QR</div>
+              </div>
+            </div>
+            <div class="fg">
+              <label class="fl">Account Number (Optional)</label>
+              <input class="fi" id="gcash-n" placeholder="09XX XXX XXXX (or leave blank)" />
+            </div>
+            <div class="fg">
+              <label class="fl">QR Code Image</label>
+              <input type="file" id="gcash-file" accept="image/*" style="display:none;" onchange="handleQrFileSelect('gcash', this)" />
+              <div id="gcash-qr-prev-wrap" style="display:none;align-items:center;gap:12px;padding:10px;background:#faf7f8;border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;">
+                <img id="gcash-qr-img-prev" class="qr-prev-img" src="" alt="GCash QR" />
+                <div style="flex:1;">
+                  <div style="font-size:.78rem;font-weight:700;color:var(--txt-1);">QR Image Attached</div>
+                  <div style="font-size:.7rem;color:var(--txt-3);margin-bottom:6px;">Ready for guests to scan</div>
+                  <button type="button" class="btn btn-outline btn-xs" onclick="removeQrImage('gcash')">Remove</button>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm" style="width:100%;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="document.getElementById('gcash-file').click()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Upload QR Code Image
+              </button>
+              <input class="fi" id="gcash-q" placeholder="Or paste image URL (optional)" style="font-size:.76rem;" />
+            </div>
+            <button class="btn btn-primary btn-sm" style="width:100%;margin-top:4px;" onclick="savePayment('gcash')">Save GCash</button>
+          </div>
+
+          <!-- MariBank -->
+          <div class="panel">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+              <div
+                style="width:38px;height:38px;background:linear-gradient(135deg,#e63900,#ff5722);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.82rem;font-weight:800;box-shadow:0 2px 8px rgba(255,87,34,.3);">
+                M</div>
+              <div>
+                <div style="font-size:.95rem;font-weight:700;color:var(--txt-1);">MariBank</div>
+                <div style="font-size:.72rem;color:var(--txt-3);">11 numbers (optional) • Shopee / Sea</div>
+              </div>
+            </div>
+            <div class="fg">
+              <label class="fl">Account Number (Optional)</label>
+              <input class="fi" id="maya-n" placeholder="11 numbers (or leave blank for QR only)" />
+            </div>
+            <div class="fg">
+              <label class="fl">QR Code Image</label>
+              <input type="file" id="maya-file" accept="image/*" style="display:none;" onchange="handleQrFileSelect('maya', this)" />
+              <div id="maya-qr-prev-wrap" style="display:none;align-items:center;gap:12px;padding:10px;background:#faf7f8;border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;">
+                <img id="maya-qr-img-prev" class="qr-prev-img" src="" alt="MariBank QR" />
+                <div style="flex:1;">
+                  <div style="font-size:.78rem;font-weight:700;color:var(--txt-1);">QR Image Attached</div>
+                  <div style="font-size:.7rem;color:var(--txt-3);margin-bottom:6px;">Ready for guests to scan</div>
+                  <button type="button" class="btn btn-outline btn-xs" onclick="removeQrImage('maya')">Remove</button>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm" style="width:100%;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="document.getElementById('maya-file').click()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Upload QR Code Image
+              </button>
+              <input class="fi" id="maya-q" placeholder="Or paste image URL (optional)" style="font-size:.76rem;" />
+            </div>
+            <button class="btn btn-primary btn-sm" style="width:100%;margin-top:4px;" onclick="savePayment('maya')">Save MariBank</button>
+          </div>
+
+          <!-- BPI -->
+          <div class="panel">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+              <div
+                style="width:38px;height:38px;background:linear-gradient(135deg,#7a0f1d,#a81c2e);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.82rem;font-weight:800;box-shadow:0 2px 8px rgba(168,28,46,.3);">
+                B</div>
+              <div>
+                <div style="font-size:.95rem;font-weight:700;color:var(--txt-1);">BPI</div>
+                <div style="font-size:.72rem;color:var(--txt-3);">10 digits (optional) • Scan QR</div>
+              </div>
+            </div>
+            <div class="fg">
+              <label class="fl">Account Number (Optional)</label>
+              <input class="fi" id="bpi-n" placeholder="10 digits (or leave blank for QR only)" />
+            </div>
+            <div class="fg">
+              <label class="fl">QR Code Image</label>
+              <input type="file" id="bpi-file" accept="image/*" style="display:none;" onchange="handleQrFileSelect('bpi', this)" />
+              <div id="bpi-qr-prev-wrap" style="display:none;align-items:center;gap:12px;padding:10px;background:#faf7f8;border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;">
+                <img id="bpi-qr-img-prev" class="qr-prev-img" src="" alt="BPI QR" />
+                <div style="flex:1;">
+                  <div style="font-size:.78rem;font-weight:700;color:var(--txt-1);">QR Image Attached</div>
+                  <div style="font-size:.7rem;color:var(--txt-3);margin-bottom:6px;">Ready for guests to scan</div>
+                  <button type="button" class="btn btn-outline btn-xs" onclick="removeQrImage('bpi')">Remove</button>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm" style="width:100%;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="document.getElementById('bpi-file').click()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Upload QR Code Image
+              </button>
+              <input class="fi" id="bpi-q" placeholder="Or paste image URL (optional)" style="font-size:.76rem;" />
+            </div>
+            <button class="btn btn-primary btn-sm" style="width:100%;margin-top:4px;" onclick="savePayment('bpi')">Save BPI</button>
+          </div>
+        </div>
+
+        <div class="panel mt-14" style="max-width:320px;">
+          <div style="font-size:.85rem;font-weight:600;color:var(--txt-1);margin-bottom:14px;">Change Admin PIN</div>
+          <div class="fg"><label class="fl">New PIN (4 digits)</label><input class="fi" id="new-pin" type="password"
+              maxlength="4" placeholder="••••" /></div>
+          <button class="btn btn-primary btn-sm" onclick="changePin()">Update PIN</button>
+        </div>
+
+        <!-- Supabase Cloud Sync -->
+        <div class="panel mt-14" style="max-width:440px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--rose-dk)" stroke-width="2.2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              <div style="font-size:.92rem;font-weight:700;color:var(--txt-1);">Supabase Cloud Database</div>
+            </div>
+            <span id="sb-status-pill" class="fin-status-pill s-pending" style="font-size:.7rem;padding:3px 8px;">Offline (Local)</span>
+          </div>
+          <p style="font-size:.78rem;color:var(--txt-3);margin-bottom:14px;line-height:1.4;">
+            Connect your Supabase project so your members can see real-time updates and invoices live on Vercel from any phone!
+          </p>
+          <div class="fg">
+            <label class="fl">Project URL</label>
+            <input class="fi" id="sb-url" placeholder="https://xxxxxxxx.supabase.co" />
+          </div>
+          <div class="fg">
+            <label class="fl">Anon Public Key</label>
+            <input class="fi" id="sb-key" type="password" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." />
+          </div>
+          <div style="display:flex;gap:8px;margin-top:6px;">
+            <button class="btn btn-primary btn-sm" onclick="saveSupabaseConfig()">Save &amp; Sync to Cloud</button>
+            <button class="btn btn-outline btn-sm" onclick="disconnectSupabase()">Disconnect</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ GROUP DETAIL ═════════════════ -->
+  <div id="v-detail" class="view">
+    <header class="app-header">
+      <div class="header-logo">Danah's Finance Tracker</div>
+      <div class="header-actions">
+        <button class="btn btn-outline btn-sm" id="hdr-add-exp" onclick="openAddExp()">
+          <svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Add Expense
+        </button>
+        <button class="btn btn-outline btn-sm" id="hdr-add-deduct" onclick="openAddDeduction()" style="border-color:rgba(40,167,69,.4);color:#1e7e34;background:#f3faf5;">
+          <svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5">
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Deduct Amount
+        </button>
+        <button class="btn btn-primary btn-sm" id="hdr-add-mem" onclick="openAddMember()">
+          <svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Add Member
+        </button>
+      </div>
+    </header>
+    <div class="main">
+      <button class="back-btn" onclick="goAdminHome()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        Back to Groups
+      </button>
+
+      <!-- Compact Bar: Editable Group Title + Share Link -->
+      <div class="detail-header" style="margin-bottom:18px;padding:16px 20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div class="editable-title-wrap" style="flex:1;min-width:200px;">
+            <input class="editable-title-input" id="gd-title-input" value="Group"
+              title="Click to edit group title"
+              onblur="saveGroupTitle(this.value)" onkeydown="if(event.key==='Enter')this.blur()" />
+            <button class="edit-title-btn" title="Edit group name" onclick="document.getElementById('gd-title-input').focus()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;background:var(--surface-2);padding:6px 10px;border-radius:var(--r-sm);border:1px solid var(--border);">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--txt-2)" stroke-width="2.2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+            <span class="share-url" id="share-url" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.74rem;">—</span>
+            <button class="btn btn-outline btn-xs" onclick="copyShare()">Copy</button>
+            <button class="btn btn-primary btn-xs" onclick="openShareLink()">Preview ↗</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paper Receipt Invoice Dispenser -->
+      <div class="receipt-container" style="max-width:520px;margin:0 auto 22px;">
+        <div class="printer-slot"></div>
+        <div class="paper-receipt" id="gd-paper-receipt">
+          <!-- Dispensed paper receipt generated in renderDetail(g) -->
+        </div>
+        <div class="receipt-sawtooth"></div>
+      </div>
+
+      <!-- Itemized Bills & Expenses Panel -->
+      <div class="panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div class="panel-title" style="margin-bottom:0;">Itemized Bills &amp; Expenses</div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-outline btn-xs" onclick="openAddDeduction()" style="color:#1e7e34;border-color:rgba(40,167,69,.4);">
+              🌱 Deduct (Member Paid)
+            </button>
+            <button class="btn btn-primary btn-xs" onclick="openAddExp()">
+              + Add Expense
+            </button>
+          </div>
+        </div>
+        <div class="exp-list" id="gd-exps">
+          <div class="empty-state">No expenses yet — add one to get started.</div>
+        </div>
+      </div>
+
+      <!-- Hidden legacy hooks for JS compatibility -->
+      <div style="display:none;">
+        <div id="gd-title"></div>
+        <div id="gd-meta"></div>
+        <div id="gd-total"></div>
+        <div id="gd-total-sub"></div>
+        <div id="gd-members"></div>
+        <div id="gd-balances"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ PUBLIC HOME ══════════════════ -->
+  <div id="v-pub-home" class="view">
+    <header class="pub-header">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--rose-dk)" stroke-width="2">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+        </svg>
+        <div class="pub-title">Danah's Finance Tracker</div>
+      </div>
+    </header>
+    <div class="pub-container">
+      <div class="pub-hero">
+        <div class="coquette-pill">✨ SHARED EXPENSE TRACKER</div>
+        <h1 class="pub-hero-title">Capstone & Group Bills</h1>
+        <p class="pub-hero-sub">Select your project group below to view your itemized share and send your payment.</p>
+      </div>
+
+      <div class="pub-companion-card">
+        <img src="mascot.jpg" alt="Danah" class="companion-avatar" onerror="this.style.display='none'" />
+        <div class="companion-bubble">
+          <strong>Hey there!</strong><br />
+          Danah shared this with you. Tap your group below to see your balance and payment details! 💕
+        </div>
+      </div>
+
+      <div class="pub-card-section">
+        <div class="pub-section-header">
+          <div class="pub-section-tag">SELECT YOUR GROUP</div>
+          <div class="pub-section-hint">Active project billings and collections</div>
+        </div>
+        <div id="pub-groups"></div>
+      </div>
+
+      <p class="txt-soft" style="text-align:center;font-size:.76rem;margin-top:36px;">Made with love by Danah 🎀</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ PUBLIC GROUP ═════════════════ -->
+  <div id="v-pub-group" class="view">
+    <header class="pub-header">
+      <button class="btn btn-outline btn-sm" onclick="goPubHome()" style="padding:6px 14px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        All Groups
+      </button>
+      <div class="pub-title" id="pub-g-title">Group</div>
+      <div style="width:70px;"></div>
+    </header>
+
+    <div class="pub-container">
+      <!-- Coquette Hero Banner -->
+      <div class="pub-hero">
+        <div class="coquette-pill">🎀 CAPSTONE EXPENSE TRACKER</div>
+        <h1 class="pub-hero-title" id="pub-hero-gname">Capstone Spendings</h1>
+        <p class="pub-hero-sub">Select your name below to view your itemized share and how to pay Danah.</p>
+      </div>
+
+      <!-- Mascot Companion Note -->
+      <div class="pub-companion-card">
+        <img src="mascot.jpg" alt="Danah" class="companion-avatar" onerror="this.style.display='none'" />
+        <div class="companion-bubble">
+          <span id="companion-text">Hi! Tap your name below to see your share and my GCash card. Thanks for paying on time! 💕</span>
+        </div>
+      </div>
+
+      <!-- Vertical Member Selection -->
+      <div class="pub-card-section">
+        <div class="pub-section-header">
+          <div class="pub-section-tag">WHO ARE YOU?</div>
+          <div class="pub-section-hint">Select your name to view your balance and receipt</div>
+        </div>
+        <div class="pub-member-vlist" id="pub-person-btns"></div>
+      </div>
+
+      <!-- Selected Member Finance View -->
+      <div id="pub-person-view" style="display:none">
+
+        <!-- Member's Paper Receipt Dispenser (has full invoice, itemized list, payment status) -->
+        <div class="receipt-container" id="pub-receipt-wrap" style="margin: 0 auto 22px;">
+          <div class="printer-slot"></div>
+          <div class="paper-receipt" id="pub-paper-receipt">
+            <!-- Populated in selectPubMember(idx) -->
+          </div>
+          <div class="receipt-sawtooth"></div>
+        </div>
+
+        <!-- Real Bank Cards for Payment -->
+        <div class="pub-card-section">
+          <div class="pub-section-header">
+            <div class="pub-section-tag">HOW TO PAY DANAH</div>
+            <div class="pub-section-hint">Copy account number or scan QR to transfer</div>
+          </div>
+          <div class="bank-cards-grid" id="pub-payments"></div>
+        </div>
+
+        <!-- Payment Confirmation Section -->
+        <div class="pub-card-section" id="pub-paid-card-wrap">
+          <div class="paid-hero-box">
+            <div class="paid-hero-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--rose-dk)" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <div class="paid-hero-title">Done sending your payment?</div>
+            <div class="paid-hero-sub">Let Danah know so she can confirm your receipt in her tracker.</div>
+            <div id="pub-paid-status" style="margin: 10px 0;"></div>
+            <button class="btn btn-primary" id="pub-paid-btn" onclick="reportPaid()" style="padding:10px 24px; font-size:.86rem;">
+              I already paid Danah
+            </button>
+          </div>
+        </div>
+
+        <!-- Hidden elements kept for JS compatibility -->
+        <div id="pub-balance-card" style="display:none;">
+          <div id="pub-card-status-badge"></div>
+          <div id="pub-bname"></div>
+          <div id="pub-bamt"></div>
+          <div id="pub-bmeta"></div>
+          <div id="pub-card-action-bar"></div>
+        </div>
+        <div id="pub-brows" style="display:none;"></div>
+
+      </div>
+
+      <p class="txt-soft" style="text-align:center;font-size:.76rem;margin-top:36px;">Made with love by Danah 🎀</p>
+    </div>
+  </div>
+
+  <!-- QR Code View Modal -->
+  <div class="overlay" id="m-qr-view">
+    <div class="modal" style="max-width:380px;text-align:center;">
+      <div class="modal-head">
+        <div class="modal-title" id="qr-modal-title">Payment QR Code</div>
+        <button class="modal-close" onclick="cm('m-qr-view')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div style="padding:16px 0;">
+        <img id="qr-modal-img" src="" alt="QR Code" style="max-width:240px;width:100%;border-radius:14px;border:1px solid var(--border);box-shadow:var(--sh-md);margin-bottom:12px;"/>
+        <p style="font-size:.82rem;color:var(--txt-2);line-height:1.5;">Scan this QR code using your bank or e-wallet app to pay Danah directly.</p>
+      </div>
+      <button class="btn btn-outline" style="width:100%;" onclick="cm('m-qr-view')">Close</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ MODALS ════════════════════════ -->
+
+  <!-- Add Group -->
+  <div class="overlay" id="m-add-group">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">New Expense Group</div>
+        <button class="modal-close" onclick="cm('m-add-group')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div class="fg"><label class="fl">Group Name</label><input class="fi" id="ng-name"
+          placeholder="e.g. Capstone Spendings" /></div>
+      <div class="fg"><label class="fl">Notes (optional)</label><textarea class="ft" id="ng-notes"
+          placeholder="What's this group for?"></textarea></div>
+      <div class="divider"></div>
+      <div style="font-size:.78rem;font-weight:600;color:var(--txt-2);margin-bottom:10px;">Add Members</div>
+      <div id="ng-members-list" style="display:flex;flex-direction:column;gap:7px;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:7px;">
+        <input class="fi" id="ng-mem-input" placeholder="Member name" style="flex:1"
+          onkeydown="if(event.key==='Enter'){addMemberToNewGroup();event.preventDefault()}" />
+        <button class="btn btn-outline btn-sm" onclick="addMemberToNewGroup()">Add</button>
+      </div>
+      <div class="fhint" style="margin-bottom:16px;">e.g. Christian Paul, Theresa Valiente</div>
+      <button class="btn btn-primary" style="width:100%" onclick="createGroup()">Create Group</button>
+    </div>
+  </div>
+
+  <!-- Add Member (to existing group) -->
+  <div class="overlay" id="m-add-member">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">Add Member</div>
+        <button class="modal-close" onclick="cm('m-add-member')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div class="fg"><label class="fl">Name</label><input class="fi" id="am-name" placeholder="e.g. Christian Paul" />
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="addMember()">Add Member</button>
+    </div>
+  </div>
+
+  <!-- Add Expense -->
+  <div class="overlay" id="m-add-exp">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">Add Expense</div>
+        <button class="modal-close" onclick="cm('m-add-exp')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">What for?</label><input class="fi" id="ae-name" placeholder="e.g. Printing" />
+        </div>
+        <div class="fg"><label class="fl">Total Amount (₱)</label><input class="fi" id="ae-total" type="number" min="0"
+            placeholder="300" oninput="recalcSplits()" /></div>
+      </div>
+      <div class="fg"><label class="fl">Notes (optional)</label><input class="fi" id="ae-notes"
+          placeholder="Any details..." /></div>
+      <div class="divider"></div>
+      <div style="font-size:.78rem;font-weight:600;color:var(--txt-2);margin-bottom:8px;">Who shares this expense?</div>
+      <div class="fhint" style="margin-bottom:10px;">Choose members included in this expense and how to split it.</div>
+      <div class="split-type-tabs">
+        <div class="split-tab active" id="st-equal" onclick="setSplitType('equal')">Split equally</div>
+        <div class="split-tab" id="st-custom" onclick="setSplitType('custom')">Custom amounts</div>
+        <div class="split-tab" id="st-specific" onclick="setSplitType('specific')">Specific people only</div>
+      </div>
+      <div id="ae-include-wrap" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--rose-lt);border:1px solid var(--rose-2);border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="toggleDanahCheckbox(event)">
+        <input type="checkbox" id="ae-include-me" checked style="accent-color:var(--rose-dk);cursor:pointer;width:17px;height:17px;flex-shrink:0;" onchange="recalcSplits()"/>
+        <div style="flex:1;">
+          <label for="ae-include-me" style="font-size:.78rem;font-weight:600;color:var(--txt-1);cursor:pointer;display:block;">Include Danah (me) in split</label>
+          <div style="font-size:.7rem;color:var(--txt-2);">Total is divided by members + Danah so members only owe their share</div>
+        </div>
+      </div>
+      <div class="split-member-list" id="ae-member-list"></div>
+      <div id="ae-custom-splits" style="display:none;margin-top:8px;">
+        <div class="custom-splits" id="custom-splits-inner"></div>
+      </div>
+      <div
+        style="margin-top:12px;padding:10px 12px;background:var(--rose-lt);border:1px solid var(--rose-2);border-radius:var(--r-sm);">
+        <div style="font-size:.72rem;color:var(--txt-2);">Each person owes</div>
+        <div id="ae-preview" style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--rose);">—</div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:14px;" onclick="addExpense()">Add Expense</button>
+    </div>
+  </div>
+
+  <!-- Add Deduction (Member Paid for Danah) -->
+  <div class="overlay" id="m-add-deduction">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">Member Paid for Danah (Deduction)</div>
+        <button class="modal-close" onclick="cm('m-add-deduction')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <p style="font-size:.8rem;color:var(--txt-2);margin-bottom:14px;line-height:1.4;">
+        If a member paid for your commute, food, or another expense, enter it here. This automatically <strong>deducts</strong> from what they owe you!
+      </p>
+      <div class="fg">
+        <label class="fl">Who paid for you?</label>
+        <select class="fi" id="ad-member" style="background:#fff;"></select>
+      </div>
+      <div class="fg">
+        <label class="fl">What was it for?</label>
+        <input class="fi" id="ad-name" placeholder="e.g. Commute fare, Tricycle, Lunch, Coffee" />
+      </div>
+      <div class="fg">
+        <label class="fl">Amount (₱)</label>
+        <input class="fi" id="ad-amount" type="number" min="0" step="any" placeholder="0.00" />
+      </div>
+      <div class="fg">
+        <label class="fl">Notes (optional)</label>
+        <input class="fi" id="ad-notes" placeholder="e.g. Theresa paid for Danah's commute" />
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="saveDeduction()">Deduct from Member's Balance</button>
+    </div>
+  </div>
+
+  <!-- Confirm Paid (admin) -->
+  <div class="overlay" id="m-confirm-paid">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">Confirm Payment</div>
+        <button class="modal-close" onclick="cm('m-confirm-paid')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <p style="color:var(--txt-2);font-size:.87rem;margin-bottom:18px;" id="cp-text">Confirm?</p>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" style="flex:1" onclick="doPaidAction()">Confirm Paid</button>
+        <button class="btn btn-outline" style="flex:1" onclick="cm('m-confirm-paid')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Member -->
+  <div class="overlay" id="m-edit-member">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">Edit Member</div>
+        <button class="modal-close" onclick="cm('m-edit-member')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div class="fg"><label class="fl">Name</label><input class="fi" id="em-name" /></div>
+      <input type="hidden" id="em-idx" />
+      <button class="btn btn-primary" style="width:100%" onclick="saveEditMember()">Save</button>
+    </div>
+  </div>
+
+  <script>
+    /* ═══ DATA ══════════════════════════════════════════════════ */
+    const DB = 'danah_v2', PIN_K = 'danah_pin';
+    const DEFAULT_PIN = '1234';
+    function rdb() { try { return JSON.parse(localStorage.getItem(DB)) || { groups: [], payments: {} }; } catch { return { groups: [], payments: {} }; } }
+    function rpin() { return localStorage.getItem(PIN_K) || DEFAULT_PIN; }
+    function wpin(p) { localStorage.setItem(PIN_K, p); }
+
+    /* ═══ SUPABASE CLOUD SYNC ═════════════════════════════════════ */
+    const SB_URL_K = 'danah_sb_url', SB_KEY_K = 'danah_sb_key';
+    let sbClient = null;
+
+    function getSbConfig() {
+      return {
+        url: localStorage.getItem(SB_URL_K) || '',
+        key: localStorage.getItem(SB_KEY_K) || ''
+      };
+    }
+
+    function initSupabase() {
+      const cfg = getSbConfig();
+      const pill = document.getElementById('sb-status-pill');
+      const urlInp = document.getElementById('sb-url');
+      const keyInp = document.getElementById('sb-key');
+      if (urlInp) urlInp.value = cfg.url;
+      if (keyInp) keyInp.value = cfg.key;
+
+      if (cfg.url && cfg.key && window.supabase) {
+        try {
+          sbClient = window.supabase.createClient(cfg.url, cfg.key);
+          if (pill) {
+            pill.className = 'fin-status-pill s-paid';
+            pill.textContent = 'Cloud Connected ✓';
+          }
+          fetchFromSupabase();
+        } catch (e) {
+          console.warn('Supabase init error:', e);
+          if (pill) { pill.className = 'fin-status-pill s-review'; pill.textContent = 'Config Error'; }
+        }
+      } else {
+        if (pill) { pill.className = 'fin-status-pill s-pending'; pill.textContent = 'Offline (Local)'; }
+      }
+    }
+
+    async function syncToSupabase(data) {
+      if (!sbClient) return;
+      try {
+        await sbClient.from('finance_sync').upsert({ id: 'danah_store', data, updated_at: new Date().toISOString() });
+      } catch (e) {
+        console.warn('Sync to Supabase error:', e);
+      }
+    }
+
+    async function fetchFromSupabase() {
+      if (!sbClient) return;
+      try {
+        const { data, error } = await sbClient.from('finance_sync').select('data').eq('id', 'danah_store').single();
+        if (data && data.data && Array.isArray(data.data.groups)) {
+          db = data.data;
+          localStorage.setItem(DB, JSON.stringify(db));
+          if (document.getElementById('v-admin').classList.contains('active')) renderAdmin();
+          if (curGid && document.getElementById('v-detail').classList.contains('active')) {
+            const g = db.groups.find(x => x.id === curGid);
+            if (g) renderDetail(g);
+          }
+          if (pubGid && document.getElementById('v-pub-group').classList.contains('active')) {
+            openPubGroup(pubGid);
+          }
+        }
+      } catch (e) {
+        console.warn('Fetch from Supabase error:', e);
+      }
+    }
+
+    function saveSupabaseConfig() {
+      const u = (document.getElementById('sb-url').value || '').trim();
+      const k = (document.getElementById('sb-key').value || '').trim();
+      if (!u || !k) { toast('Please enter both Supabase URL and key', 'e'); return; }
+      localStorage.setItem(SB_URL_K, u);
+      localStorage.setItem(SB_KEY_K, k);
+      initSupabase();
+      if (sbClient) {
+        syncToSupabase(db);
+        toast('Connected & Synced to Supabase!', 's');
+      }
+    }
+
+    function disconnectSupabase() {
+      localStorage.removeItem(SB_URL_K);
+      localStorage.removeItem(SB_KEY_K);
+      sbClient = null;
+      document.getElementById('sb-url').value = '';
+      document.getElementById('sb-key').value = '';
+      const pill = document.getElementById('sb-status-pill');
+      if (pill) { pill.className = 'fin-status-pill s-pending'; pill.textContent = 'Offline (Local)'; }
+      toast('Disconnected from Supabase');
+    }
+
+    function wdb(d) {
+      localStorage.setItem(DB, JSON.stringify(d));
+      syncToSupabase(d);
+    }
+
+    let db = rdb();
+    let curGid = null;         // current group detail id
+    let pubGid = null;         // public view group id
+    let pubMemIdx = null;      // selected person in public view
+    let pendingAction = null;  // {gid,memIdx,action}
+
+    /* new-group temp members */
+    let ngMembers = [];
+
+    /* split type for add-expense modal */
+    let splitType = 'equal';   // 'equal'|'custom'|'specific'
+
+    /* ═══ VIEWS ═════════════════════════════════════════════════ */
+    function sv(id) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0, 0); }
+
+    /* ═══ TOAST ═════════════════════════════════════════════════ */
+    function toast(msg, type = 'i') {
+      const ic = { i: '♡', s: '✓', e: '✕' };
+      const el = document.createElement('div');
+      el.className = 'toast ' + type;
+      el.textContent = msg;
+      document.getElementById('toast-wrap').appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
+
+    /* ═══ PIN ════════════════════════════════════════════════════ */
+    let pv = '';
+    function pp(d) { if (pv.length >= 4) return; pv += d; updDots(); }
+    function pd() { pv = pv.slice(0, -1); updDots(); }
+    function updDots() { for (let i = 0; i < 4; i++)document.getElementById('d' + i).classList.toggle('filled', i < pv.length); document.getElementById('pin-err').textContent = ''; }
+    function pe() {
+      if (pv === rpin()) { pv = ''; updDots(); goAdmin(); }
+      else {
+        document.getElementById('pin-err').textContent = 'Wrong PIN. Try again.';
+        const c = document.getElementById('pin-card');
+        let t = 0, iv = setInterval(() => { t++; c.style.transform = t % 2 ? 'translateX(-8px)' : 'translateX(0)'; if (t > 5) { clearInterval(iv); c.style.transform = ''; } }, 60);
+        pv = ''; updDots();
+      }
+    }
+    document.addEventListener('keydown', e => {
+      if (!document.getElementById('v-pin').classList.contains('active')) return;
+      if (/^[0-9]$/.test(e.key)) pp(e.key);
+      else if (e.key === 'Backspace') pd();
+      else if (e.key === 'Enter') pe();
+    });
+
+    /* ═══ ADMIN HOME ═════════════════════════════════════════════ */
+    function goAdmin() { db = rdb(); sv('v-admin'); showTab('groups'); renderAdmin(); }
+    function lockAdmin() { sv('v-pin'); }
+
+    function showTab(t) {
+      ['groups', 'settings'].forEach(x => {
+        document.getElementById('tab-' + x).classList.toggle('active', x === t);
+        document.getElementById('tc-' + x).style.display = x === t ? '' : 'none';
+      });
+      if (t === 'settings') loadPaySettings();
+    }
+
+    function renderAdmin() {
+      const grid = document.getElementById('groups-grid');
+      grid.innerHTML = '';
+      let ts = 0, to = 0, tp = 0;
+
+      db.groups.forEach(g => {
+        const gTotal = g.expenses.reduce((s, e) => s + e.amount, 0);
+        ts += gTotal;
+        g.members.forEach(m => {
+          const bal = memberBalance(g, m.id);
+          if (m.status === 'paid') tp += bal;
+          else to += bal;
+        });
+
+        const card = document.createElement('div');
+        card.className = 'group-card';
+        card.onclick = () => openDetail(g.id);
+
+        const chips = g.members.map(m => {
+          const init = initials(m.name);
+          const paid = m.status === 'paid';
+          return `<div class="member-chip"><div class="chip-avatar${paid ? ' paid' : ''}">${init}</div>${esc(m.name)}</div>`;
+        }).join('');
+
+        card.innerHTML = `
+      <div class="group-card-top">
+        <div>
+          <div class="group-name">${esc(g.name)}</div>
+          <div class="group-date">${fdate(g.createdAt)}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn-icon del group-del-btn" title="Delete" onclick="delGroup('${g.id}',event)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="member-chips">${chips || '<span style="font-size:.73rem;color:var(--txt-3)">No members yet</span>'}</div>
+      <div class="group-total">₱${fmt(gTotal)}</div>
+      <div class="group-total-note">${g.expenses.length} expense${g.expenses.length !== 1 ? 's' : ''} · ${g.members.length} member${g.members.length !== 1 ? 's' : ''}</div>
+      <div class="group-cta">View details
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>`;
+        grid.appendChild(card);
+      });
+
+      // Add card
+      const add = document.createElement('div');
+      add.className = 'add-card'; add.onclick = openAddGroup;
+      add.innerHTML = `
+    <div class="add-card-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+    <div class="add-card-label">New Group</div>
+    <div class="add-card-sub">e.g. Capstone Spendings</div>`;
+      grid.appendChild(add);
+
+      document.getElementById('s-spent').textContent = '₱' + fmt(ts);
+      document.getElementById('s-owed').textContent = '₱' + fmt(to);
+      document.getElementById('s-paid').textContent = '₱' + fmt(tp);
+    }
+
+    function delGroup(id, e) {
+      e.stopPropagation();
+      if (!confirm('Delete this group?')) return;
+      db.groups = db.groups.filter(g => g.id !== id); wdb(db); renderAdmin(); toast('Group deleted');
+    }
+
+    /* ═══ GROUP DETAIL ═══════════════════════════════════════════ */
+    function openDetail(id) {
+      curGid = id; db = rdb();
+      const g = db.groups.find(g => g.id === id); if (!g) return;
+      if (document.getElementById('gd-title')) document.getElementById('gd-title').textContent = g.name;
+      if (document.getElementById('gd-title-input')) document.getElementById('gd-title-input').value = g.name;
+      if (document.getElementById('gd-meta')) document.getElementById('gd-meta').textContent = 'Created ' + fdate(g.createdAt) + (g.notes ? ' · ' + g.notes : '');
+      renderDetail(g);
+      sv('v-detail');
+    }
+
+    function saveGroupTitle(newVal) {
+      const g = db.groups.find(g => g.id === curGid);
+      if (!g) return;
+      const trimmed = (newVal || '').trim();
+      if (!trimmed) {
+        if (document.getElementById('gd-title-input')) document.getElementById('gd-title-input').value = g.name;
+        return;
+      }
+      if (trimmed !== g.name) {
+        g.name = trimmed;
+        wdb(db);
+        renderDetail(g);
+        toast('Group title updated!', 's');
+      }
+    }
+
+    function openAddDeduction() {
+      const g = db.groups.find(g => g.id === curGid);
+      if (!g || g.members.length === 0) { toast('Add members to this group first', 'e'); return; }
+      const sel = document.getElementById('ad-member');
+      sel.innerHTML = g.members.map(m => `<option value="${m.id}">${esc(m.name)} (Current share: ₱${fmt(memberBalance(g, m.id))})</option>`).join('');
+      document.getElementById('ad-name').value = '';
+      document.getElementById('ad-amount').value = '';
+      document.getElementById('ad-notes').value = '';
+      om('m-add-deduction');
+    }
+
+    function saveDeduction() {
+      const g = db.groups.find(g => g.id === curGid);
+      if (!g) return;
+      const memId = document.getElementById('ad-member').value;
+      const mem = g.members.find(m => m.id === memId);
+      const name = document.getElementById('ad-name').value.trim() || 'Paid for Danah';
+      const amount = parseFloat(document.getElementById('ad-amount').value);
+      const notes = document.getElementById('ad-notes').value.trim();
+
+      if (isNaN(amount) || amount <= 0) {
+        toast('Enter a valid deduction amount', 'e');
+        return;
+      }
+
+      g.expenses.push({
+        id: 'e_' + Date.now(),
+        name: `🌱 ${name} (Paid by ${mem ? mem.name : 'Member'})`,
+        amount: -amount,
+        isDeduction: true,
+        paidByMemberId: memId,
+        notes: notes || `Paid for Danah — automatically deducted from ${mem ? mem.name : 'member'}'s balance`,
+        splits: [{ memberId: memId, amount: -amount }],
+        createdAt: new Date().toISOString()
+      });
+
+      wdb(db);
+      cm('m-add-deduction');
+      renderDetail(g);
+      toast(`Deducted ₱${fmt(amount)} from ${mem ? mem.name : 'member'}!`, 's');
+    }
+
+    function renderDetail(g) {
+      const total = g.expenses.reduce((s, e) => s + e.amount, 0);
+      if (document.getElementById('gd-total')) document.getElementById('gd-total').textContent = '₱' + fmt(total);
+      if (document.getElementById('gd-total-sub')) document.getElementById('gd-total-sub').textContent = g.expenses.length + ' expense' + (g.expenses.length !== 1 ? 's' : '');
+      if (document.getElementById('gd-title-input')) document.getElementById('gd-title-input').value = g.name;
+      document.getElementById('share-url').textContent = location.href.split('?')[0] + '?group=' + g.id;
+
+      /* Paper Receipt Dispenser in Admin Detail */
+      const rcptEl = document.getElementById('gd-paper-receipt');
+      if (rcptEl) {
+        const paidCount = g.members.filter(m => m.status === 'paid').length;
+        const totalMembers = g.members.length;
+
+        let membersHtml = '';
+        /* Danah (Upfront Payer) */
+        membersHtml += `
+          <div class="rm-row" style="background:#fdf8fa;border-color:var(--rose-2);">
+            <div class="rm-left">
+              <div class="rm-av paid" style="background:var(--rose);color:#fff;border-color:var(--rose-dk);">D</div>
+              <div>
+                <div class="rm-name">Danah (You · Upfront Payer)</div>
+                <div style="font-size:.7rem;color:var(--txt-3);font-weight:500;">Payer · All receipts tracked</div>
+              </div>
+            </div>
+            <div class="rm-right">
+              <span class="rm-pill paid" style="background:var(--rose-lt);color:var(--rose-dk);border-color:var(--rose-2);font-weight:700;">PAYER</span>
+              <div class="rm-amt" style="color:var(--rose-dk);font-weight:800;">₱${fmt(total)}</div>
+            </div>
+          </div>
+        `;
+
+        g.members.forEach(m => {
+          const bal = memberBalance(g, m.id);
+          const isPaid = m.status === 'paid';
+          const isReview = m.status === 'review';
+          const pillClass = isPaid ? 'paid' : (isReview ? 'review' : 'pending');
+          const pillLabel = isPaid ? '✓ Paid' : (isReview ? '⏳ In Review' : 'Pending');
+          membersHtml += `
+            <div class="rm-row">
+              <div class="rm-left">
+                <div class="rm-av ${isPaid ? 'paid' : ''}">${initials(m.name)}</div>
+                <div>
+                  <div class="rm-name">${esc(m.name)}</div>
+                  <div style="font-size:.7rem;color:var(--txt-3);font-weight:500;">Member Share</div>
+                </div>
+              </div>
+              <div class="rm-right">
+                <span class="rm-pill ${pillClass}">${pillLabel}</span>
+                <div class="rm-amt" style="${bal < 0 ? 'color:#1e7e34;' : ''}">₱${fmt(bal)}</div>
+              </div>
+            </div>
+          `;
+        });
+
+        let expListLines = '';
+        if (g.expenses.length > 0) {
+          expListLines = `
+            <div style="margin:14px 0 10px;border-top:1px dashed #e8dee3;padding-top:10px;">
+              <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--txt-3);margin-bottom:8px;">Itemized Spendings (${g.expenses.length})</div>
+              ${g.expenses.map(e => `
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:.84rem;padding:4px 0;">
+                  <span style="font-weight:700;color:${e.amount < 0 ? '#1e7e34' : 'var(--txt-1)'};">${esc(e.name)}</span>
+                  <span style="flex:1;border-bottom:1px dotted #e0d6da;margin:0 8px;"></span>
+                  <span style="font-family:'Playfair Display',serif;font-weight:800;color:${e.amount < 0 ? '#1e7e34' : 'var(--txt-1)'};">${e.amount < 0 ? '-₱' + fmt(Math.abs(e.amount)) : '₱' + fmt(e.amount)}</span>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+
+        const statusSummary = (paidCount === totalMembers && totalMembers > 0)
+          ? '<span style="color:var(--green);font-weight:800;">ALL SETTLED ✓</span>'
+          : `<span style="color:var(--rose-dk);font-weight:800;">${paidCount} of ${totalMembers} SETTLED</span>`;
+
+        rcptEl.innerHTML = `
+          <div class="receipt-tag">RECEIPT DISPENSER · INVOICE #${g.id.replace('g_', 'EXP-')}</div>
+          <div class="receipt-title">${esc(g.name)}</div>
+          <div class="receipt-meta">${fdate(g.createdAt)} · Danah's Finance Tracker</div>
+          <div class="receipt-divider">------------------------------------------</div>
+          
+          <div class="receipt-figures">
+            <div>
+              <div class="receipt-fig-label">Total Group Spent</div>
+              <div class="receipt-fig-val">₱${fmt(total)}</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="receipt-fig-label">Status</div>
+              <div style="font-size:.88rem;margin-top:4px;">${statusSummary}</div>
+            </div>
+          </div>
+
+          ${expListLines}
+
+          <div class="receipt-divider">------------------------------------------</div>
+
+          <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--txt-3);margin-bottom:6px;">Members Breakdown</div>
+          <div class="receipt-members-box">
+            ${membersHtml}
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:10px;border-top:1px dashed #e8dee3;">
+            <span style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--txt-3);">Settlement Progress</span>
+            <span style="font-size:.76rem;font-weight:700;color:var(--txt-1);">${paidCount}/${totalMembers} Members Paid</span>
+          </div>
+          <div class="receipt-stepper">
+            <div class="receipt-step-dot active"></div>
+            <div class="receipt-step-line ${paidCount > 0 ? 'active' : ''}"></div>
+            <div class="receipt-step-dot ${paidCount > 0 ? 'active' : ''}"></div>
+            <div class="receipt-step-line ${paidCount === totalMembers && totalMembers > 0 ? 'active' : ''}"></div>
+            <div class="receipt-step-dot ${paidCount === totalMembers && totalMembers > 0 ? 'active' : ''}"></div>
+          </div>
+        `;
+      }
+
+      /* Expenses */
+      const expEl = document.getElementById('gd-exps');
+      if (expEl) {
+        expEl.innerHTML = '';
+        if (g.expenses.length === 0) {
+          expEl.innerHTML = '<div class="empty-state">No expenses yet.</div>';
+        } else {
+          g.expenses.forEach((exp, i) => {
+            const splits = exp.splits || [];
+            const isDeduct = exp.amount < 0 || exp.isDeduction;
+            const badges = splits.map(sp => {
+              const mem = g.members.find(m => m.id === sp.memberId);
+              if (!mem) return '';
+              if (isDeduct) {
+                return `<span class="exp-split-badge" style="background:#eaf8ef;color:#1e7e34;border-color:#b8ecc7;">Deducted from ${esc(mem.name)}: -₱${fmt(Math.abs(sp.amount))}</span>`;
+              }
+              return `<span class="exp-split-badge">${esc(mem.name)}: ₱${fmt(sp.amount)}</span>`;
+            }).join('');
+            const row = document.createElement('div');
+            row.className = 'exp-item';
+            row.innerHTML = `
+          <div class="exp-info">
+            <div class="exp-name" style="${isDeduct ? 'color:#1e7e34;font-weight:700;' : ''}">${esc(exp.name)}</div>
+            ${exp.notes ? `<div class="exp-note">${esc(exp.notes)}</div>` : ''}
+            <div class="exp-splits">${badges}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <div class="exp-amount" style="${isDeduct ? 'color:#1e7e34;font-weight:800;' : ''}">${isDeduct ? '-₱' + fmt(Math.abs(exp.amount)) : '₱' + fmt(exp.amount)}</div>
+            <button class="btn-icon del" onclick="delExp(${i})" title="Delete entry">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
+            </button>
+          </div>`;
+            expEl.appendChild(row);
+          });
+        }
+      }
+    }
+
+    function memberBalance(g, mid) {
+      return (g.expenses || []).reduce((s, e) => {
+        const sp = (e.splits || []).find(x => x.memberId === mid);
+        return s + (sp ? sp.amount : 0);
+      }, 0);
+    }
+
+    function goAdminHome() { curGid = null; goAdmin(); }
+
+    function delExp(idx) {
+      if (!confirm('Delete this item?')) return;
+      const g = db.groups.find(g => g.id === curGid);
+      g.expenses.splice(idx, 1); wdb(db); renderDetail(g); toast('Deleted');
+    }
+
+    function delMember(idx) {
+      if (!confirm('Remove this member? Their splits will stay in expenses.')) return;
+      const g = db.groups.find(g => g.id === curGid);
+      g.members.splice(idx, 1); wdb(db); renderDetail(g); toast('Member removed');
+    }
+
+    function openEditMember(idx) {
+      const g = db.groups.find(g => g.id === curGid);
+      document.getElementById('em-name').value = g.members[idx].name;
+      document.getElementById('em-idx').value = idx;
+      om('m-edit-member');
+    }
+    function saveEditMember() {
+      const idx = parseInt(document.getElementById('em-idx').value);
+      const name = document.getElementById('em-name').value.trim();
+      if (!name) { toast('Enter a name', 'e'); return; }
+      const g = db.groups.find(g => g.id === curGid);
+      g.members[idx].name = name; wdb(db); cm('m-edit-member'); renderDetail(g); toast('Saved');
+    }
+
+    function openConfirmPaid(gid, memIdx, action) {
+      pendingAction = { gid, memIdx, action };
+      const g = db.groups.find(g => g.id === gid);
+      const m = g.members[memIdx];
+      document.getElementById('cp-text').innerHTML = action === 'confirm'
+        ? `Mark <strong>${esc(m.name)}</strong> as paid (₱${fmt(memberBalance(g, m.id))})?`
+        : `Reject payment from <strong>${esc(m.name)}</strong> and set back to Pending?`;
+      document.querySelector('#m-confirm-paid .btn-primary').textContent = action === 'confirm' ? 'Yes, Confirm Paid' : 'Yes, Reject';
+      om('m-confirm-paid');
+    }
+    function doPaidAction() {
+      if (!pendingAction) return;
+      const { gid, memIdx, action } = pendingAction;
+      const g = db.groups.find(g => g.id === gid);
+      g.members[memIdx].status = action === 'confirm' ? 'paid' : 'pending';
+      wdb(db); cm('m-confirm-paid');
+      if (curGid === gid) renderDetail(g);
+      else renderAdmin();
+      if (action === 'confirm') { toast('Payment confirmed!', 's'); confetti(); }
+      else toast('Set back to pending');
+      pendingAction = null;
+    }
+
+    /* copy share link */
+    function copyShare() {
+      navigator.clipboard.writeText(document.getElementById('share-url').textContent)
+        .then(() => toast('Link copied!', 's'));
+    }
+
+    function openShareLink() {
+      if (curGid) openPubGroup(curGid);
+    }
+
+    /* ═══ MODALS ════════════════════════════════════════════════ */
+    function om(id) { document.getElementById(id).classList.add('open'); }
+    function cm(id) { document.getElementById(id).classList.remove('open'); }
+    document.querySelectorAll('.overlay').forEach(o => { o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }); });
+
+    /* ═══ ADD GROUP ══════════════════════════════════════════════ */
+    ngMembers = [];
+    function openAddGroup() {
+      ngMembers = [];
+      document.getElementById('ng-name').value = '';
+      document.getElementById('ng-notes').value = '';
+      document.getElementById('ng-mem-input').value = '';
+      renderNGMembers();
+      om('m-add-group');
+    }
+    function renderNGMembers() {
+      const el = document.getElementById('ng-members-list');
+      el.innerHTML = '';
+      ngMembers.forEach((n, i) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;';
+        row.innerHTML = `<div class="member-chip"><div class="chip-avatar">${initials(n)}</div>${esc(n)}</div><button class="btn-icon del btn-xs" onclick="ngMembers.splice(${i},1);renderNGMembers()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+        el.appendChild(row);
+      });
+    }
+    function addMemberToNewGroup() {
+      const v = document.getElementById('ng-mem-input').value.trim();
+      if (!v) return;
+      ngMembers.push(v);
+      document.getElementById('ng-mem-input').value = '';
+      renderNGMembers();
+    }
+    function createGroup() {
+      const name = document.getElementById('ng-name').value.trim();
+      if (!name) { toast('Give the group a name', 'e'); return; }
+      const group = {
+        id: 'g_' + Date.now(), name,
+        notes: document.getElementById('ng-notes').value.trim(),
+        createdAt: new Date().toISOString(),
+        members: ngMembers.map((n, i) => ({ id: 'm_' + Date.now() + '_' + i, name: n, status: 'pending' })),
+        expenses: []
+      };
+      db.groups.unshift(group); wdb(db);
+      cm('m-add-group'); renderAdmin(); toast('Group created!', 's');
+      openDetail(group.id);
+    }
+
+    /* ═══ ADD MEMBER (detail) ════════════════════════════════════ */
+    function openAddMember() { document.getElementById('am-name').value = ''; om('m-add-member'); }
+    function addMember() {
+      const name = document.getElementById('am-name').value.trim();
+      if (!name) { toast('Enter a name', 'e'); return; }
+      const g = db.groups.find(g => g.id === curGid);
+      g.members.push({ id: 'm_' + Date.now(), name, status: 'pending' });
+      wdb(db); cm('m-add-member'); renderDetail(g); toast(name + ' added', 's');
+    }
+
+    /* ═══ ADD EXPENSE ════════════════════════════════════════════ */
+    splitType = 'equal';
+
+    function toggleDanahCheckbox(e) {
+      if (e.target && e.target.id === 'ae-include-me') return;
+      const cb = document.getElementById('ae-include-me');
+      if (cb) {
+        cb.checked = !cb.checked;
+        recalcSplits();
+      }
+    }
+
+    function setSplitType(t) {
+      splitType = t;
+      ['equal', 'custom', 'specific'].forEach(x => {
+        document.getElementById('st-' + x).classList.toggle('active', x === t);
+      });
+      document.getElementById('ae-custom-splits').style.display = t === 'custom' ? '' : 'none';
+      const incWrap = document.getElementById('ae-include-wrap');
+      if (incWrap) incWrap.style.display = t === 'custom' ? 'none' : 'flex';
+      buildMemberCheckboxes();
+      recalcSplits();
+    }
+
+    function openAddExp() {
+      const g = db.groups.find(g => g.id === curGid);
+      if (!g || g.members.length === 0) { toast('Add members first', 'e'); return; }
+      document.getElementById('ae-name').value = '';
+      document.getElementById('ae-total').value = '';
+      document.getElementById('ae-notes').value = '';
+      splitType = 'equal';
+      ['equal', 'custom', 'specific'].forEach(x => document.getElementById('st-' + x).classList.toggle('active', x === 'equal'));
+      const incCb = document.getElementById('ae-include-me');
+      if (incCb) incCb.checked = true;
+      const incWrap = document.getElementById('ae-include-wrap');
+      if (incWrap) incWrap.style.display = 'flex';
+      document.getElementById('ae-custom-splits').style.display = 'none';
+      buildMemberCheckboxes();
+      recalcSplits();
+      om('m-add-exp');
+    }
+
+    function buildMemberCheckboxes() {
+      const g = db.groups.find(g => g.id === curGid);
+      const el = document.getElementById('ae-member-list');
+      el.innerHTML = '';
+      g.members.forEach((m, i) => {
+        const row = document.createElement('div');
+        row.className = 'split-member-item checked';
+        row.id = 'smi-' + i;
+        row.innerHTML = `
+      <input type="checkbox" class="split-member-cb" id="smcb-${i}" checked onchange="toggleMemberSplit(${i})"/>
+      <div class="split-member-av">${initials(m.name)}</div>
+      <label class="split-member-name" for="smcb-${i}">${esc(m.name)}</label>
+      <span class="split-member-amt" id="sma-${i}">—</span>`;
+        el.appendChild(row);
+      });
+
+      /* custom split inputs */
+      const ci = document.getElementById('custom-splits-inner');
+      ci.innerHTML = '';
+      g.members.forEach((m, i) => {
+        const row = document.createElement('div');
+        row.className = 'custom-split-row';
+        row.id = 'csr-' + i;
+        row.innerHTML = `<span class="custom-split-name">${esc(m.name)}</span><input type="number" class="custom-split-input" id="csi-${i}" min="0" placeholder="0" oninput="recalcSplits()"/>`;
+        ci.appendChild(row);
+      });
+    }
+
+    function toggleMemberSplit(i) {
+      const cb = document.getElementById('smcb-' + i);
+      const row = document.getElementById('smi-' + i);
+      row.classList.toggle('checked', cb.checked);
+      /* for custom: show/hide custom input row */
+      const csr = document.getElementById('csr-' + i);
+      if (csr) csr.style.display = cb.checked ? '' : 'none';
+      recalcSplits();
+    }
+
+    function recalcSplits() {
+      const g = db.groups.find(g => g.id === curGid);
+      if (!g) return;
+      const total = parseFloat(document.getElementById('ae-total').value) || 0;
+      const checkedIdxs = g.members.map((_, i) => i).filter(i => document.getElementById('smcb-' + i)?.checked);
+
+      if (splitType === 'equal' || splitType === 'specific') {
+        const includeDanah = splitType === 'equal' && document.getElementById('ae-include-me')?.checked;
+        const count = checkedIdxs.length + (includeDanah ? 1 : 0);
+        const perPerson = count > 0 ? total / count : 0;
+        g.members.forEach((_, i) => {
+          const sp = document.getElementById('sma-' + i);
+          const isIn = checkedIdxs.includes(i);
+          if (sp) sp.textContent = isIn && total > 0 ? '₱' + fmt(perPerson) : '—';
+        });
+        const previewEl = document.getElementById('ae-preview');
+        if (previewEl) {
+          if (total > 0 && checkedIdxs.length > 0) {
+            if (includeDanah) {
+              previewEl.innerHTML = `₱${fmt(perPerson)} each <span style="font-size:.75rem;color:var(--txt-2);display:block;margin-top:2px;font-family:'Inter',sans-serif">(${checkedIdxs.length} members + Danah = ${count} ways • Danah's share is ₱${fmt(perPerson)})</span>`;
+            } else {
+              previewEl.innerHTML = `₱${fmt(perPerson)} each <span style="font-size:.75rem;color:var(--txt-2);display:block;margin-top:2px;font-family:'Inter',sans-serif">(${checkedIdxs.length} members only)</span>`;
+            }
+          } else {
+            previewEl.textContent = 'Set amount above';
+          }
+        }
+      } else {
+        /* custom */
+        let customSum = 0;
+        g.members.forEach((_, i) => {
+          const inp = document.getElementById('csi-' + i);
+          const val = inp ? parseFloat(inp.value) || 0 : 0;
+          customSum += val;
+          const sp = document.getElementById('sma-' + i);
+          if (sp) sp.textContent = val > 0 ? '₱' + fmt(val) : '—';
+        });
+        const rem = total - customSum;
+        const previewEl = document.getElementById('ae-preview');
+        if (previewEl) {
+          if (total > 0) {
+            let note = '';
+            if (Math.abs(rem) < 0.01) {
+              note = ' <span style="color:var(--green)">✓ Exact match</span>';
+            } else if (rem > 0) {
+              note = ` <span style="color:var(--rose-dk);font-size:.76rem;font-family:'Inter',sans-serif;display:block;margin-top:2px;">(Remaining ₱${fmt(rem)} is Danah's share)</span>`;
+            } else {
+              note = ` <span style="color:#c0392b;font-size:.76rem;font-family:'Inter',sans-serif;display:block;margin-top:2px;">(Exceeds total by ₱${fmt(Math.abs(rem))})</span>`;
+            }
+            previewEl.innerHTML = `Members owe: ₱${fmt(customSum)}${note}`;
+          } else {
+            previewEl.textContent = 'Set amount above';
+          }
+        }
+      }
+    }
+
+    function addExpense() {
+      const g = db.groups.find(g => g.id === curGid);
+      const name = document.getElementById('ae-name').value.trim();
+      const total = parseFloat(document.getElementById('ae-total').value);
+      if (!name || isNaN(total) || total <= 0) { toast('Fill in expense name and amount', 'e'); return; }
+
+      const checkedIdxs = g.members.map((_, i) => i).filter(i => document.getElementById('smcb-' + i)?.checked);
+      if (checkedIdxs.length === 0) { toast('Select at least one member', 'e'); return; }
+
+      let splits = [];
+      if (splitType === 'equal' || splitType === 'specific') {
+        const includeDanah = splitType === 'equal' && document.getElementById('ae-include-me')?.checked;
+        const count = checkedIdxs.length + (includeDanah ? 1 : 0);
+        const per = total / count;
+        splits = checkedIdxs.map(i => ({ memberId: g.members[i].id, amount: Math.round(per * 100) / 100 }));
+      } else {
+        splits = checkedIdxs.map(i => {
+          const v = parseFloat(document.getElementById('csi-' + i)?.value) || 0;
+          return { memberId: g.members[i].id, amount: v };
+        }).filter(s => s.amount > 0);
+        const sum = splits.reduce((a, s) => a + s.amount, 0);
+
+        if (Math.abs(sum - total) > 0.05) {
+          const diff = Math.round((total - sum) * 100) / 100;
+          let promptMsg = '';
+          if (diff > 0) {
+            promptMsg = `The custom amounts total ₱${fmt(sum)}, leaving ₱${fmt(diff)} as Danah's personal share.\n\nDo you want to proceed and save this expense?`;
+          } else {
+            promptMsg = `The custom amounts total ₱${fmt(sum)}, which is greater than the total amount ₱${fmt(total)}.\n\nDo you want to proceed anyway?`;
+          }
+          if (!confirm(promptMsg)) return;
+        }
+      }
+
+      g.expenses.push({
+        id: 'e_' + Date.now(),
+        name,
+        amount: total,
+        notes: document.getElementById('ae-notes').value.trim(),
+        splits,
+        createdAt: new Date().toISOString()
+      });
+      wdb(db);
+      cm('m-add-exp');
+      renderDetail(g);
+      toast('Expense added', 's');
+    }
+
+    /* ═══ PAYMENT SETTINGS ═══════════════════════════════════════ */
+    function handleQrFileSelect(type, input) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const base64 = e.target.result;
+        if (!db.payments) db.payments = {};
+        if (!db.payments[type]) db.payments[type] = { number: '', qr: '' };
+        db.payments[type].qr = base64;
+        wdb(db);
+        const prevWrap = document.getElementById(type + '-qr-prev-wrap');
+        const prevImg = document.getElementById(type + '-qr-img-prev');
+        if (prevWrap && prevImg) {
+          prevImg.src = base64;
+          prevWrap.style.display = 'flex';
+        }
+        const brandNames = { gcash: 'GCash', maya: 'MariBank', bpi: 'BPI' };
+        toast((brandNames[type] || type.toUpperCase()) + ' QR image uploaded!', 's');
+      };
+      reader.readAsDataURL(file);
+      input.value = '';
+    }
+
+    function removeQrImage(type) {
+      if (db.payments && db.payments[type]) {
+        db.payments[type].qr = '';
+        wdb(db);
+      }
+      const prevWrap = document.getElementById(type + '-qr-prev-wrap');
+      const prevImg = document.getElementById(type + '-qr-img-prev');
+      if (prevWrap) prevWrap.style.display = 'none';
+      if (prevImg) prevImg.src = '';
+      const qInput = document.getElementById(type + '-q');
+      if (qInput) qInput.value = '';
+      toast('QR Code removed', 's');
+    }
+
+    function savePayment(type) {
+      if (!db.payments) db.payments = {};
+      const num = document.getElementById(type + '-n').value.trim();
+      const urlInput = document.getElementById(type + '-q').value.trim();
+      let currentQr = (db.payments[type] && db.payments[type].qr) || '';
+      if (urlInput) {
+        currentQr = urlInput;
+      }
+      db.payments[type] = {
+        number: num,
+        qr: currentQr
+      };
+      wdb(db);
+      const brandNames = { gcash: 'GCash', maya: 'MariBank', bpi: 'BPI' };
+      toast((brandNames[type] || type.toUpperCase()) + ' info saved', 's');
+      loadPaySettings();
+    }
+
+    function loadPaySettings() {
+      const p = db.payments || {};
+      ['gcash', 'maya', 'bpi'].forEach(t => {
+        const item = p[t] || {};
+        const n = document.getElementById(t + '-n');
+        const q = document.getElementById(t + '-q');
+        const prevWrap = document.getElementById(t + '-qr-prev-wrap');
+        const prevImg = document.getElementById(t + '-qr-img-prev');
+        if (n) n.value = item.number || '';
+        if (q) q.value = (item.qr && item.qr.startsWith('data:')) ? '' : (item.qr || '');
+        if (item.qr && prevWrap && prevImg) {
+          prevImg.src = item.qr;
+          prevWrap.style.display = 'flex';
+        } else if (prevWrap) {
+          prevWrap.style.display = 'none';
+        }
+      });
+    }
+
+    function changePin() {
+      const v = document.getElementById('new-pin').value.trim();
+      if (!/^\d{4}$/.test(v)) { toast('PIN must be 4 digits', 'e'); return; }
+      wpin(v);
+      document.getElementById('new-pin').value = '';
+      toast('PIN updated', 's');
+    }
+
+    /* ═══ PUBLIC VIEW ════════════════════════════════════════════ */
+    function goPubHome() {
+      db = rdb();
+      sv('v-pub-home');
+      renderPubHome();
+    }
+
+    function renderPubHome() {
+      const el = document.getElementById('pub-groups');
+      el.innerHTML = '';
+      if (db.groups.length === 0) {
+        el.innerHTML = '<p class="txt-soft" style="text-align:center;padding:36px;font-size:.85rem;font-style:italic">No groups yet — check back soon.</p>';
+        return;
+      }
+      db.groups.forEach(g => {
+        const total = g.expenses.reduce((s, e) => s + e.amount, 0);
+        const card = document.createElement('div');
+        card.style.cssText = 'background:#ffffff;border:1.5px solid var(--border);border-radius:var(--r-md);padding:18px 20px;cursor:pointer;margin-bottom:12px;box-shadow:0 4px 16px rgba(180,120,140,.06);transition:transform .18s var(--ease),border-color .18s var(--ease),box-shadow .18s var(--ease);';
+        card.onmouseenter = () => { card.style.transform = 'translateY(-2px)'; card.style.borderColor = 'var(--rose-2)'; card.style.boxShadow = '0 8px 24px rgba(201,123,144,.15)'; };
+        card.onmouseleave = () => { card.style.transform = ''; card.style.borderColor = 'var(--border)'; card.style.boxShadow = '0 4px 16px rgba(180,120,140,.06)'; };
+
+        const chips = g.members.map(m => `<div class="member-chip" style="font-size:.74rem;"><div class="chip-avatar${m.status === 'paid' ? ' paid' : ''}">${initials(m.name)}</div>${esc(m.name)}${m.status === 'paid' ? ' ✓' : ''}</div>`).join('');
+        card.innerHTML = `
+          <div style="font-size:1.05rem;font-weight:600;color:var(--txt-1);margin-bottom:4px;">${esc(g.name)}</div>
+          <div style="font-size:.73rem;color:var(--txt-3);margin-bottom:12px;">${fdate(g.createdAt)} • ${g.expenses.length} bill${g.expenses.length === 1 ? '' : 's'}</div>
+          <div class="member-chips" style="margin-bottom:14px;">${chips}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #f2e9ed;padding-top:10px;">
+            <div>
+              <div style="font-size:.66rem;font-weight:600;text-transform:uppercase;color:var(--txt-3);letter-spacing:.05em;">Total Group Spendings</div>
+              <div style="font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:600;color:var(--txt-1);">₱${fmt(total)}</div>
+            </div>
+            <div style="font-size:.78rem;color:var(--rose-dk);font-weight:600;">View Balance →</div>
+          </div>
+        `;
+        card.onclick = () => openPubGroup(g.id);
+        el.appendChild(card);
+      });
+    }
+
+    function openPubGroup(id) {
+      pubGid = id;
+      pubMemIdx = null;
+      db = rdb();
+      const g = db.groups.find(g => g.id === id);
+      if (!g) return;
+
+      document.getElementById('pub-g-title').textContent = g.name;
+      const heroGname = document.getElementById('pub-hero-gname');
+      if (heroGname) heroGname.textContent = g.name;
+
+      document.getElementById('pub-person-view').style.display = 'none';
+
+      const btnsEl = document.getElementById('pub-person-btns');
+      btnsEl.innerHTML = '';
+      if (g.members.length === 0) {
+        btnsEl.innerHTML = '<p class="txt-soft" style="font-size:.85rem;text-align:center;padding:16px;">No members listed yet.</p>';
+      } else {
+        g.members.forEach((m, i) => {
+          const bal = memberBalance(g, m.id);
+          const card = document.createElement('div');
+          card.className = 'pub-member-card';
+          card.id = 'pb-' + i;
+
+          let tagClass = 'pending', tagText = 'Pending';
+          if (m.status === 'paid') {
+            tagClass = 'paid';
+            tagText = '✓ Paid';
+          } else if (m.status === 'review') {
+            tagClass = 'review';
+            tagText = '⏳ In Review';
+          }
+
+          const myExps = g.expenses.filter(e => (e.splits || []).some(s => s.memberId === m.id));
+
+          card.innerHTML = `
+            <div class="pmc-left">
+              <div class="pmc-avatar ${m.status === 'paid' ? 'paid' : ''}">${initials(m.name)}</div>
+              <div class="pmc-details">
+                <div class="pmc-name">${esc(m.name)}</div>
+                <div class="pmc-sub">${myExps.length} expense item${myExps.length === 1 ? '' : 's'} • Tap to view breakdown</div>
+              </div>
+            </div>
+            <div class="pmc-right">
+              <div class="pmc-bal">₱${fmt(bal)}</div>
+              <div class="pmc-tag ${tagClass}">${tagText}</div>
+            </div>
+          `;
+          card.onclick = () => selectPubMember(i);
+          btnsEl.appendChild(card);
+        });
+      }
+      sv('v-pub-group');
+    }
+
+    function selectPubMember(idx) {
+      pubMemIdx = idx;
+      document.querySelectorAll('.pub-member-card').forEach((b, i) => b.classList.toggle('selected', i === idx));
+      const g = db.groups.find(g => g.id === pubGid);
+      const m = g.members[idx];
+
+      const pView = document.getElementById('pub-person-view');
+      pView.style.display = '';
+
+      document.getElementById('pub-bname').textContent = m.name + "'s Total Balance";
+      const bal = memberBalance(g, m.id);
+      document.getElementById('pub-bamt').textContent = '₱' + fmt(bal);
+
+      const myExps = g.expenses.filter(e => (e.splits || []).some(s => s.memberId === m.id));
+      document.getElementById('pub-bmeta').textContent = `Group: ${g.name} • ${myExps.length} itemized bill${myExps.length === 1 ? '' : 's'}`;
+
+      /* Member's Paper Receipt Dispenser View */
+      const prEl = document.getElementById('pub-paper-receipt');
+      if (prEl) {
+        const isPaid = m.status === 'paid';
+        const isReview = m.status === 'review';
+        const totalGroup = g.expenses.reduce((s, e) => s + e.amount, 0);
+
+        let itemsHtml = '';
+        if (myExps.length > 0) {
+          itemsHtml = myExps.map(exp => {
+            const sp = (exp.splits || []).find(s => s.memberId === m.id);
+            const share = sp ? sp.amount : 0;
+            const isDeduct = share < 0 || exp.isDeduction;
+            return `
+              <div style="display:flex;justify-content:space-between;align-items:center;font-size:.84rem;padding:4px 0;">
+                <div>
+                  <div style="font-weight:700;color:${isDeduct ? '#1e7e34' : 'var(--txt-1)'};">${esc(exp.name)}</div>
+                  <div style="font-size:.68rem;color:var(--txt-3);">${fdate(exp.createdAt)} · ${isDeduct ? 'Deduction (You paid for Danah)' : 'Total bill ₱' + fmt(exp.amount)}</div>
+                </div>
+                <span style="flex:1;border-bottom:1px dotted #e0d6da;margin:0 10px;"></span>
+                <span style="font-family:'Playfair Display',serif;font-weight:800;color:${isDeduct ? '#1e7e34' : 'var(--txt-1)'};">${isDeduct ? '-₱' + fmt(Math.abs(share)) : '₱' + fmt(share)}</span>
+              </div>
+            `;
+          }).join('');
+        } else {
+          itemsHtml = '<div style="font-size:.78rem;color:var(--txt-3);font-style:italic;text-align:center;padding:8px 0;">No itemized spendings assigned</div>';
+        }
+
+        const statusClass = isPaid ? 'paid' : (isReview ? 'review' : 'pending');
+        const statusText = isPaid ? 'PAID IN FULL ✓' : (isReview ? 'IN REVIEW ⏳' : 'UNPAID');
+
+        prEl.innerHTML = `
+          <div class="receipt-tag">OFFICIAL GUEST INVOICE · ${esc(g.name).toUpperCase()}</div>
+          <div class="receipt-title">${esc(m.name)}'s Invoice</div>
+          <div class="receipt-meta">Issued by Danah Paris · ${fdate(g.createdAt)}</div>
+          <div class="receipt-divider">------------------------------------------</div>
+
+          <div class="receipt-figures">
+            <div>
+              <div class="receipt-fig-label">Your Share Due</div>
+              <div class="receipt-fig-val" style="color:${isPaid ? 'var(--green)' : 'var(--rose-dk)'};">₱${fmt(bal)}</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="receipt-fig-label">Total Group Bill</div>
+              <div style="font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:800;color:var(--txt-2);">₱${fmt(totalGroup)}</div>
+            </div>
+          </div>
+
+          <div style="margin:12px 0 6px;">
+            <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--txt-3);margin-bottom:8px;">Itemized Breakdown</div>
+            ${itemsHtml}
+          </div>
+
+          <div class="receipt-divider">------------------------------------------</div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0 8px;">
+            <div style="font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--txt-2);">Payment Status</div>
+            <span class="rm-pill ${statusClass}" style="font-size:.72rem;padding:4px 10px;font-weight:700;">${statusText}</span>
+          </div>
+
+          <div class="receipt-stepper">
+            <div class="receipt-step-dot active"></div>
+            <div class="receipt-step-line ${isReview || isPaid ? 'active' : ''}"></div>
+            <div class="receipt-step-dot ${isReview || isPaid ? 'active' : ''}"></div>
+            <div class="receipt-step-line ${isPaid ? 'active' : ''}"></div>
+            <div class="receipt-step-dot ${isPaid ? 'active' : ''}"></div>
+          </div>
+        `;
+      }
+
+      /* Status Badge on Balance Card */
+      const bBadge = document.getElementById('pub-card-status-badge');
+      if (bBadge) {
+        if (m.status === 'paid') {
+          bBadge.className = 'fin-status-pill s-paid';
+          bBadge.textContent = '✓ Settled in Full';
+        } else if (m.status === 'review') {
+          bBadge.className = 'fin-status-pill s-review';
+          bBadge.textContent = '⏳ Payment Under Review';
+        } else {
+          bBadge.className = 'fin-status-pill s-pending';
+          bBadge.textContent = 'Payment Pending';
+        }
+      }
+
+      /* Card Action Bar Button */
+      const actEl = document.getElementById('pub-card-action-bar');
+      if (actEl) {
+        if (m.status === 'paid') {
+          actEl.innerHTML = `<div style="text-align:center;font-size:.82rem;font-weight:600;color:var(--green);background:var(--green-lt);padding:9px;border-radius:12px;border:1px solid #c2e6d1;">✓ All settled! Payment confirmed by Danah 🎉</div>`;
+        } else if (m.status === 'review') {
+          actEl.innerHTML = `<div style="text-align:center;font-size:.82rem;font-weight:600;color:var(--amber);background:var(--amber-lt);padding:9px;border-radius:12px;border:1px solid #ebd9a8;">⏳ Payment submitted — waiting for Danah's confirmation</div>`;
+        } else {
+          actEl.innerHTML = `<button class="btn btn-primary" style="width:100%;padding:12px 20px;font-size:.88rem;box-shadow:0 4px 16px rgba(201,123,144,.35);" onclick="reportPaid()">✨ I already sent my payment to Danah</button>`;
+        }
+      }
+
+      /* Itemized expense rows */
+      const rowsEl = document.getElementById('pub-brows');
+      rowsEl.innerHTML = '';
+      if (myExps.length === 0) {
+        rowsEl.innerHTML = '<p class="txt-soft" style="font-size:.84rem;padding:12px;text-align:center;font-style:italic;">No itemized expenses for you in this group.</p>';
+      } else {
+        myExps.forEach(exp => {
+          const sp = (exp.splits || []).find(s => s.memberId === m.id);
+          const row = document.createElement('div');
+          row.className = 'fin-exp-row';
+          row.innerHTML = `
+            <div class="fer-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+            </div>
+            <div class="fer-details">
+              <div class="fer-title">${esc(exp.name)}</div>
+              <div class="fer-meta">${fdate(exp.createdAt)} • Total bill ₱${fmt(exp.amount)}${exp.notes ? ' • ' + esc(exp.notes) : ''}</div>
+            </div>
+            <div class="fer-amount-col">
+              <div class="fer-share-lbl">Your Share</div>
+              <div class="fer-share-val">₱${fmt(sp ? sp.amount : 0)}</div>
+            </div>
+          `;
+          rowsEl.appendChild(row);
+        });
+      }
+
+      /* Render realistic bank cards */
+      renderPubPayments();
+      renderPubPaidStatus(m);
+
+      const balCard = document.getElementById('pub-balance-card');
+      if (balCard) {
+        balCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function formatCardNumber(num, key) {
+      if (!num) return '';
+      const clean = num.replace(/\s+/g, '');
+      if (key === 'bpi' || clean.length === 10) {
+        /* BPI 10-digit format: XXXX  XXXX  XX */
+        return clean.slice(0, 4) + '  ' + clean.slice(4, 8) + '  ' + clean.slice(8);
+      }
+      if (clean.length === 11) {
+        /* Philippine 11-digit mobile/account: 09XX  XXXX  XXX */
+        return clean.slice(0, 4) + '  ' + clean.slice(4, 7) + '  ' + clean.slice(7);
+      }
+      return clean.replace(/(.{4})/g, '$1  ').trim();
+    }
+
+    function renderPubPayments() {
+      const p = db.payments || {};
+      const el = document.getElementById('pub-payments');
+      el.innerHTML = '';
+
+      const configs = [
+        {
+          key: 'gcash',
+          label: 'GCash',
+          cls: 'card-gcash',
+          logoHtml: '<span style="font-weight:800;letter-spacing:-.02em;">GCash</span>'
+        },
+        {
+          key: 'maya',
+          label: 'MariBank',
+          cls: 'card-maribank card-maya',
+          logoHtml: '<span style="font-weight:800;letter-spacing:-.02em;">MariBank</span>'
+        },
+        {
+          key: 'bpi',
+          label: 'BPI',
+          cls: 'card-bpi',
+          logoHtml: '<span style="font-family:\'Playfair Display\',serif;font-weight:800;letter-spacing:.05em;">BPI</span>'
+        }
+      ];
+
+      let any = false;
+      configs.forEach(({ key, label, cls, logoHtml }) => {
+        const item = p[key];
+        /* Render card if either number or QR code is provided */
+        if (!item || (!item.number && !item.qr)) return;
+        any = true;
+
+        const card = document.createElement('div');
+        card.className = 'fin-bank-card ' + cls;
+
+        const hasQr = Boolean(item.qr);
+        const hasNum = Boolean(item.number);
+        const formattedNum = hasNum ? formatCardNumber(item.number, key) : '';
+
+        /* If card only has QR, make the entire card clickable to open QR */
+        if (!hasNum && hasQr) {
+          card.style.cursor = 'pointer';
+          card.onclick = () => viewQrModal(item.qr, label);
+        }
+
+        let numberBlockHtml = '';
+        if (hasNum) {
+          numberBlockHtml = `<div class="fbc-number">${formattedNum}</div>`;
+        } else {
+          numberBlockHtml = `
+            <div class="fbc-qr-badge" ${hasQr ? `onclick="viewQrModal('${esc(item.qr)}', '${label}');event.stopPropagation();"` : ''}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+              </svg>
+              <span>SCAN QR CODE TO PAY</span>
+            </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <div class="fbc-top">
+            <div class="fbc-chip-wrap">
+              <!-- Golden EMV Chip -->
+              <svg class="emv-chip" width="44" height="32" viewBox="0 0 44 32">
+                <defs>
+                  <linearGradient id="emvGrad_${key}" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ffd76f"/>
+                    <stop offset="50%" stop-color="#d99f24"/>
+                    <stop offset="100%" stop-color="#f5c249"/>
+                  </linearGradient>
+                </defs>
+                <rect width="44" height="32" rx="6" fill="url(#emvGrad_${key})"/>
+                <rect x="2" y="2" width="40" height="28" rx="4" fill="none" stroke="#ba8210" stroke-width="0.8" opacity="0.6"/>
+                <path d="M14 2v28M30 2v28M2 16h40M14 10h16M14 22h16" stroke="#9e6e0d" stroke-width="1.2" opacity="0.7"/>
+              </svg>
+              <!-- Contactless Symbol -->
+              <svg class="contactless-wave" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" opacity="0.8">
+                <path d="M8.5 16.5a5 5 0 0 1 0-7"/>
+                <path d="M12 19a8.5 8.5 0 0 0 0-14"/>
+                <path d="M15.5 21.5a12 12 0 0 0 0-19"/>
+              </svg>
+            </div>
+            <div class="fbc-brand-logo">${logoHtml}</div>
+          </div>
+
+          ${numberBlockHtml}
+
+          <div class="fbc-bottom">
+            <div class="fbc-holder">
+              <div class="fbc-holder-lbl">ACCOUNT HOLDER</div>
+              <div class="fbc-holder-val">DANAH PARIS</div>
+            </div>
+            <div class="fbc-actions">
+              ${hasNum ? `
+              <button class="fbc-btn copy-btn" onclick="copyCardNum('${esc(item.number)}', this);event.stopPropagation();">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                Copy
+              </button>
+              ` : ''}
+              ${hasQr ? `
+              <button class="fbc-btn qr-btn" style="${!hasNum ? 'background:rgba(255,255,255,.32);font-weight:700;' : ''}" onclick="viewQrModal('${esc(item.qr)}', '${label}');event.stopPropagation();">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <rect x="3" y="3" width="7" height="7"/>
+                  <rect x="14" y="3" width="7" height="7"/>
+                  <rect x="14" y="14" width="7" height="7"/>
+                  <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                ${hasNum ? 'QR' : 'Tap to View QR Code'}
+              </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+        el.appendChild(card);
+      });
+
+      if (!any) {
+        el.innerHTML = '<p class="txt-soft" style="font-size:.84rem;text-align:center;padding:16px;font-style:italic;">No payment accounts set yet — please ask Danah directly.</p>';
+      }
+    }
+
+    function copyCardNum(text, btn) {
+      navigator.clipboard.writeText(text).then(() => {
+        toast('Account number copied!', 's');
+        const orig = btn.innerHTML;
+        btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+        setTimeout(() => { btn.innerHTML = orig; }, 2000);
+      }).catch(() => {
+        toast('Failed to copy', 'e');
+      });
+    }
+
+    function viewQrModal(url, title) {
+      document.getElementById('qr-modal-title').textContent = (title || 'Payment') + ' QR Code';
+      document.getElementById('qr-modal-img').src = url;
+      om('m-qr-view');
+    }
+
+    function renderPubPaidStatus(m) {
+      const sEl = document.getElementById('pub-paid-status');
+      const bEl = document.getElementById('pub-paid-btn');
+      if (m.status === 'paid') {
+        sEl.innerHTML = '<span class="member-card-status s-paid" style="display:inline-flex;padding:6px 14px;font-size:.8rem;">✓ Payment confirmed by Danah</span>';
+        bEl.style.display = 'none';
+      } else if (m.status === 'review') {
+        sEl.innerHTML = '<span class="member-card-status s-review" style="display:inline-flex;padding:6px 14px;font-size:.8rem;">⏳ Payment submitted — waiting for Danah\'s confirmation</span>';
+        bEl.style.display = 'none';
+      } else {
+        sEl.innerHTML = '';
+        bEl.style.display = '';
+      }
+    }
+
+    function reportPaid() {
+      const g = db.groups.find(g => g.id === pubGid);
+      g.members[pubMemIdx].status = 'review';
+      wdb(db);
+      confetti();
+      renderPubPaidStatus(g.members[pubMemIdx]);
+      selectPubMember(pubMemIdx);
+      toast('Payment reported! Danah will confirm shortly 💕', 's');
+    }
+
+    /* ═══ URL ROUTING ════════════════════════════════════════════ */
+    function checkURL() {
+      const gid = new URLSearchParams(location.search).get('group');
+      if (gid) {
+        db = rdb();
+        const g = db.groups.find(g => g.id === gid);
+        if (g) {
+          openPubGroup(gid);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    /* ═══ CONFETTI ═══════════════════════════════════════════════ */
+    function confetti() {
+      const colors = ['#c97b90', '#e8b4c0', '#f5edf0', '#4caf7d', '#fdf4f6'];
+      for (let i = 0; i < 40; i++) {
+        const p = document.createElement('div');
+        p.className = 'confetti-p';
+        p.style.cssText = `left:${Math.random() * 100}vw;top:-10px;background:${colors[~~(Math.random() * colors.length)]};animation-duration:${1.4 + Math.random() * 1.2}s;animation-delay:${Math.random() * .4}s;`;
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 2500);
+      }
+    }
+
+    /* ═══ HELPERS ════════════════════════════════════════════════ */
+    function fmt(n) {
+      if (isNaN(n)) return '0';
+      return Number(n).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    }
+    function fdate(iso) {
+      if (!iso) return '—';
+      return new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    function esc(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function initials(n) {
+      if (!n) return '?';
+      return n.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    }
+
+    /* ═══ INIT ═══════════════════════════════════════════════════ */
+    initSupabase();
+    if (!checkURL()) sv('v-pin');
+  </script>
+</body>
+
+</html>
