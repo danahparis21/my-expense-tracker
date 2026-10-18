@@ -3181,8 +3181,24 @@
       };
     }
 
-    function initSupabase() {
-      const cfg = getSbConfig();
+    async function initSupabase() {
+      let cfg = getSbConfig();
+      if ((!cfg.url || !cfg.key) && location.protocol.startsWith('http')) {
+        try {
+          const res = await fetch('/api/config');
+          if (res.ok) {
+            const json = await res.json();
+            if (json.supabaseUrl && json.supabaseKey) {
+              cfg = { url: json.supabaseUrl, key: json.supabaseKey };
+              localStorage.setItem(SB_URL_K, cfg.url);
+              localStorage.setItem(SB_KEY_K, cfg.key);
+            }
+          }
+        } catch (err) {
+          // Local file protocol or network error
+        }
+      }
+
       const pill = document.getElementById('sb-status-pill');
       const urlInp = document.getElementById('sb-url');
       const keyInp = document.getElementById('sb-key');
