@@ -910,6 +910,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
       padding: 8px 10px;
       border-radius: 8px;
       background: #faf6f8;
@@ -3537,25 +3538,45 @@
           </div>
         `;
 
-        g.members.forEach(m => {
+        g.members.forEach((m, memIdx) => {
           const bal = memberBalance(g, m.id);
           const isPaid = m.status === 'paid';
           const isReview = m.status === 'review';
           const pillClass = isPaid ? 'paid' : (isReview ? 'review' : 'pending');
           const pillLabel = isPaid ? '✓ Paid' : (isReview ? '⏳ In Review' : 'Pending');
+
+          /* Admin action buttons shown only for 'review' status */
+          const adminActionsHtml = isReview ? `
+            <div style="display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px dashed #e8dee3;">
+              <button
+                onclick="openConfirmPaid('${g.id}', ${memIdx}, 'confirm')"
+                style="flex:1;padding:6px 10px;font-size:.72rem;font-weight:700;border-radius:8px;border:1px solid #b8ecc7;background:#eaf8ef;color:#1e7e34;cursor:pointer;transition:all .15s;"
+                onmouseover="this.style.background='#d4f5e0'" onmouseout="this.style.background='#eaf8ef'">
+                ✓ Confirm Paid
+              </button>
+              <button
+                onclick="openConfirmPaid('${g.id}', ${memIdx}, 'reject')"
+                style="flex:1;padding:6px 10px;font-size:.72rem;font-weight:700;border-radius:8px;border:1px solid #f5c6cb;background:#fdf0f2;color:#c0392b;cursor:pointer;transition:all .15s;"
+                onmouseover="this.style.background='#fbd9dd'" onmouseout="this.style.background='#fdf0f2'">
+                ✗ Reject & Reset
+              </button>
+            </div>
+          ` : '';
+
           membersHtml += `
-            <div class="rm-row">
+            <div class="rm-row" style="${isReview ? 'border-color:var(--amber);background:#fffdf7;' : ''}">
               <div class="rm-left">
                 <div class="rm-av ${isPaid ? 'paid' : ''}">${initials(m.name)}</div>
                 <div>
                   <div class="rm-name">${esc(m.name)}</div>
-                  <div style="font-size:.7rem;color:var(--txt-3);font-weight:500;">Member Share</div>
+                  <div style="font-size:.7rem;color:var(--txt-3);font-weight:500;">${isReview ? '⚠️ Awaiting your review' : 'Member Share'}</div>
                 </div>
               </div>
               <div class="rm-right">
                 <span class="rm-pill ${pillClass}">${pillLabel}</span>
                 <div class="rm-amt" style="${bal < 0 ? 'color:#1e7e34;' : ''}">₱${fmt(bal)}</div>
               </div>
+              ${adminActionsHtml ? `<div style="width:100%;">${adminActionsHtml}</div>` : ''}
             </div>
           `;
         });
